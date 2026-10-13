@@ -5,13 +5,17 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from django.contrib.auth.views import LogoutView
-from . views import UnifiedLoginView, JwtLogoutView, CurrentUserView, SystemSettingView, UserSettingView, UserProfileUpdateView
+from . views import (  
+              TaskStatusView, UnifiedLoginView, JwtLogoutView, 
+              CurrentUserView, SystemSettingView, 
+              UserSettingView, UserProfileUpdateView 
+                     ) #API VIEWS
 from .views import(
     UsersViewset,
     CustomerViewSet , FishViewSet, SaleViewSet, 
     SupplyInvoiceViewSet, DayViewSet , SupplierViewsSet , 
     OutsideFryingViewSet, ExpenseViewSet
-)
+) #VIEWSETS
 
 router = DefaultRouter()
 router.register(r'users',UsersViewset, basename= 'users'), 
@@ -35,6 +39,8 @@ urlpatterns = [
     path('settings/system/', SystemSettingView.as_view(), name='system_settings'),
     path('settings/user/me/', UserSettingView.as_view(), name='user_settings'),
     path('users/profile/', UserProfileUpdateView.as_view(), name='user_profile'),
+    #Task status
+    path('tasks/status/<str:task_id>/', TaskStatusView.as_view(), name= "task_status")
 ]
 
 

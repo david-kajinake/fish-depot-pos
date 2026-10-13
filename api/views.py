@@ -13,16 +13,16 @@ from .models import ( User, Customer, Supplier, FishSize,
                      Expense, BalancePayment,
                      SystemSetting, UserSetting
                      )
-from .serializers import (
+from .serializers import(
     UserSerializer , CustomerSerializer , SupplierSerializer ,
     FishSizeSerializer , SaleSerializer , 
     SupplyInvoiceSerializer ,DaySerializer , 
     OutsideFryingItemSerializer ,  OutsideFryingBulkSerializer, 
     ExpenseSerializer, SystemSettingSerializer, UserSettingSerializer
 )
-from . import permissions as Custom_permissions
- #Custom permissions
+from . import permissions as Custom_permissions #Custom permissions
 from . import tasks
+from celery.result import AsyncResult
 from django.db.models import Sum, Value, DecimalField, OuterRef, Exists, Subquery
 from django.utils import timezone
 from datetime import timedelta
@@ -33,6 +33,28 @@ from .models import BalancePayment
 from .serializers import BalancePaymentSerializer
 
 # Create your views here.
+
+class TaskStatusView(APIView):
+    """Poll celery task status using task_id"""
+    permission_classes= [permissions.IsAuthenticated,]
+
+    def get(self, request, task_id):
+        result= AsyncResult(task_id)
+
+        if result.status == 'PENDING':
+            response= {"state": result.state, "status": "Queued..."}
+        elif result.status == 'STARTED':
+            response= {"state": result.state, "status": "Generating PDF and sending email..."}
+        elif result.status == 'SUCCESS':
+            response= {"state": result.state, "result": result.result}
+        elif result.status == 'FAILURE':
+            response= {"state": result.state, "error": str(result.info)}
+        else:
+            response= {"state": result.state, "status": str(result.info)}
+
+        return Response( response, status= status.HTTP_200_OK )
+
+
 
 class UnifiedLoginView(TokenObtainPairView):
     """
@@ -166,11 +188,16 @@ class CustomerViewSet( viewsets.ModelViewSet ):
         if not password or not request.user.check_password(password):
             return Response({'password': 'Your current password is incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        tasks.generate_and_email_customer_statement.delay(
+        task= tasks.generate_and_email_customer_statement.delay(
             customer_id= customer.id, 
             recipient_email= email
             )
-        return Response({"detail": "Customer's Sales statement successfully sent"}, status= status.HTTP_201_CREATED)
+        return Response(
+            {
+                "detail": "Customer's Sales statement successfully sent",
+                "task_id": task.id,
+             }, status= status.HTTP_202_ACCEPTED
+            )
 
         
 

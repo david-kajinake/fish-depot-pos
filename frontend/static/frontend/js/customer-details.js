@@ -1,4 +1,5 @@
 import { apiFetch } from './session.js';
+import { pollTaskStatus } from './utils/tasksUtils.js';
 
 const customerId = window.location.pathname.split('/').filter(Boolean).at(-1);
 let customer;
@@ -81,9 +82,42 @@ async function pay(event) {
 
 async function sendStatement(event) {
     event.preventDefault();
-    const response = await apiFetch(`/api/customers/${customerId}/send-sales-statement/`, { method: 'POST', body: JSON.stringify({ email: customerStatementEmail.value.trim(), password: customerStatementPassword.value }) });
-    if (!response.ok) return alert(`Could not send statement: ${JSON.stringify(await response.json())}`);
-    customerStatementModal.hidden = true;
-    customerStatementPassword.value = '';
-    alert('Statement sent successfully.');
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+
+    try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Initiating...';
+
+        // Trigger task
+        const response = await apiFetch(`/api/customers/${customerId}/send-sales-statement/`, {
+            method: 'POST',
+            body: JSON.stringify({
+                email: customerStatementEmail.value.trim(),
+                password: customerStatementPassword.value
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.password || err.email || 'Could not send statement.');
+        }
+
+        const data = await response.json();
+        const taskId = data.task_id;
+
+        // Poll Celery status
+        submitBtn.textContent = 'Generating & Sending...';
+        await pollTaskStatus(taskId, submitBtn);
+
+        customerStatementModal.hidden = true;
+        customerStatementPassword.value = '';
+        alert('Statement successfully generated and emailed!');
+
+    } catch (error) {
+        alert(error.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
 }
