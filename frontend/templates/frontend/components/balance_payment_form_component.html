@@ -1,0 +1,8 @@
+<form id="balancePaymentForm" class="customer-form">
+    <label>Customer
+        <input id="paymentCustomer" list="paymentCustomerOptions" autocomplete="off" required placeholder="Start typing a customer name">
+        <datalist id="paymentCustomerOptions"></datalist>
+    </label>
+    <label>Amount paid <input id="paymentAmount" type="number" min="0.01" step="0.01" required></label>
+    <div class="form-actions"><button type="button" data-close-modal="paymentModal">Cancel</button><button class="customer-primary" type="submit">Record payment</button></div>
+</form>

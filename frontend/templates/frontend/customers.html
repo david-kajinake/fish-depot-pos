@@ -1,0 +1,14 @@
+{% extends 'frontend/base.html' %}{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'frontend/css/customers.css' %}?v={{latest}}">{% endblock %}
+{% block page_title %}Customers{% endblock %}
+{% block content %}
+<section class="customers-page"><header class="customer-header"><div><p class="customer-eyebrow">Customer relationships</p><h1>Customers</h1><p>Manage customer details, balances, and buying activity.</p></div><div class="customer-actions"><button id="recordPaymentButton" class="customer-secondary">Record Balance Payment</button><button id="newCustomerButton" class="customer-primary">+ Add A New Customer</button></div></header>
+<section class="customer-kpis"><article><span>Registered</span><strong id="registeredCount">0</strong></article><article><span>Active</span><strong id="activeCount">0</strong></article><article><span>Inactive</span><strong id="inactiveCount">0</strong></article></section>
+<section class="customer-list-card"><div class="list-title"><div><h2>Customer directory</h2><p>Click a customer for sales history, balances, and contact options.</p></div><input id="customerSearch" type="search" placeholder="Search customers..."></div><div class="customer-table-wrap"><table><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Balance debt</th><th>Status</th></tr></thead><tbody id="customersTableBody"><tr><td colspan="5" class="customer-empty">Loading customers…</td></tr></tbody></table></div></section>
+<section class="customer-charts"><article class="customer-chart-card"><h2>Fastest buying customers</h2><p>Weight bought within the most recent 60 days.</p><div><canvas id="recentCustomersChart"></canvas></div></article><article class="customer-chart-card"><h2>Highest buying customers</h2><p>Total weight bought across all recorded sales.</p><div><canvas id="allTimeCustomersChart"></canvas></div></article></section>
+<section class="message-card"><div><p class="customer-eyebrow">Customer outreach</p><h2>Send a message to a customer group</h2><p>Choose recipients and a channel. Delivery integration can be connected when ready.</p></div>{% include 'frontend/components/customer_message_form_component.html' %}</section></section>
+<div id="customerModal" class="customer-modal" hidden><div class="modal-card"><button data-close-modal="customerModal" class="modal-close">&times;</button><h2>Add a customer</h2>{% include 'frontend/components/customer_form_component.html' %}</div></div><div id="paymentModal" class="customer-modal" hidden><div class="modal-card"><button data-close-modal="paymentModal" class="modal-close">&times;</button><h2>Record balance payment</h2>{% include 'frontend/components/balance_payment_form_component.html' %}</div></div>
+{% endblock %}{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="module" src="{% static 'frontend/js/customers.js'%}?v={{latest}} "></script>
+{% endblock %}

@@ -1,0 +1,170 @@
+{% extends "frontend/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'frontend/css/supplier-details.css' %}?v={{latest_css}}">
+{% endblock %}
+
+{% block page_title %}Supplier Profile{% endblock %}
+
+{% block content %}
+<div class="supplier-details-container">
+
+    <!-- BREADCRUMB / BACK LINK -->
+    <div class="top-nav-bar">
+        <a href="/suppliers/" class="btn-back">
+            <i class="fa-solid fa-arrow-left"></i> Back to Suppliers Directory
+        </a>
+    </div>
+
+    <!-- SUPPLIER OVERVIEW HEADER CARD -->
+    <div class="card profile-card">
+        <div class="profile-header-wrapper">
+            <div class="profile-main-info">
+                <div class="profile-avatar" id="supplierAvatar">--</div>
+                <div>
+                    <h1 class="supplier-title" id="supplierName">Loading...</h1>
+                    <span class="supplier-id-badge" id="supplierIdBadge">ID: #--</span>
+                </div>
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div class="profile-actions">
+                <button id="toggleEditBtn" class="btn-secondary">
+                    <i class="fa-solid fa-pen-to-square"></i> Edit Details
+                </button>
+                <button id="openStatementModalBtn" class="btn-primary">
+                    <i class="fa-solid fa-paper-plane"></i> Send Statement
+                </button>
+            </div>
+        </div>
+
+        <div class="profile-meta-grid">
+            <div class="meta-item">
+                <i class="fa-solid fa-phone"></i>
+                <div>
+                    <label>Phone Number</label>
+                    <span id="supplierPhone">—</span>
+                </div>
+            </div>
+            <div class="meta-item">
+                <i class="fa-solid fa-envelope"></i>
+                <div>
+                    <label>Email Address</label>
+                    <span id="supplierEmail">—</span>
+                </div>
+            </div>
+            <div class="meta-item">
+                <i class="fa-solid fa-weight-hanging"></i>
+                <div>
+                    <label>Total Weight Supplied</label>
+                    <span id="supplierTotalWeight" class="stat-highlight">0.00 KG</span>
+                </div>
+            </div>
+            <div class="meta-item">
+                <i class="fa-solid fa-file-invoice-dollar"></i>
+                <div>
+                    <label>Total Supply Cost</label>
+                    <span id="supplierTotalCost" class="stat-highlight">KES 0.00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT SUPPLIER FORM CARD (HIDDEN BY DEFAULT) -->
+    <div id="editSupplierCard" class="card form-card hidden">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-user-gear"></i> Modify Supplier Information</h3>
+            <button type="button" id="closeEditBtn" class="close-btn">&times;</button>
+        </div>
+        <form id="editSupplierForm">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="editName">Supplier Name <span class="required">*</span></label>
+                    <input type="text" id="editName" required placeholder="Vendor Name">
+                </div>
+                <div class="form-group">
+                    <label for="editPhone">Phone Number</label>
+                    <input type="tel" id="editPhone" placeholder="e.g. +254 712 345 678">
+                </div>
+                <div class="form-group">
+                    <label for="editEmail">Email Address</label>
+                    <input type="email" id="editEmail" placeholder="e.g. sales@vendor.com">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" id="cancelEditBtn" class="btn-cancel">Cancel</button>
+                <button type="submit" class="btn-primary">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- SUPPLY HISTORY SECTION -->
+    <div class="card history-card">
+        <div class="card-header">
+            <div>
+                <h3><i class="fa-solid fa-clock-rotate-left"></i> Historical Stock Deliveries</h3>
+                <p>Complete record of stock invoices supplied by this vendor</p>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Invoice Ref</th>
+                        <th>Date & Time</th>
+                        <th>Supplied Items</th>
+                        <th>Total Weight (KG)</th>
+                        <th>Total Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                    <tr><td colspan="5" class="text-center">Loading supply history...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- SEND STATEMENT MODAL (WITH PASSWORD CONFIRMATION) -->
+<div id="statementModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div>
+                <h3><i class="fa-solid fa-envelope-circle-check"></i> Email Supply Statement</h3>
+                <p>Generate and send statement report directly to the recipient.</p>
+            </div>
+            <button id="closeStatementModalBtn" class="close-btn">&times;</button>
+        </div>
+
+        <form id="sendStatementForm">
+            <div class="form-group">
+                <label for="statementEmail">Recipient Email Address <span class="required">*</span></label>
+                <input type="email" id="statementEmail" required placeholder="recipient@example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Your Account Password <span class="required">*</span></label>
+                <input type="password" id="confirmPassword" required placeholder="Enter your current password">
+                <small class="form-hint">Security check required before emailing financial statements.</small>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" id="cancelStatementBtn">Cancel</button>
+                <button type="submit" id="sendStatementSubmitBtn" class="btn-primary">
+                    <i class="fa-solid fa-paper-plane"></i> Send Statement
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script type="module" src="{% static 'frontend/js/supplier-details.js' %}?v={{latest}}"></script>
+{% endblock %}

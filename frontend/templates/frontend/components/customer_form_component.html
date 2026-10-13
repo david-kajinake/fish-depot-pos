@@ -1,0 +1,10 @@
+<form id="customerForm" class="customer-form">
+    <label>Name <input id="customerName" required maxlength="255"></label>
+    <label>Phone <input id="customerPhone" type="tel" maxlength="15"></label>
+    <label>Email <input id="customerEmail" type="email"></label>
+    <label>Opening debt balance <input id="customerDebt" type="number" min="0" step="0.01" value="0.00"></label>
+    <div class="form-actions">
+        <button type="button" data-close-modal="customerModal">Cancel</button>
+        <button class="customer-primary" type="submit">Save customer</button>
+    </div>
+</form>

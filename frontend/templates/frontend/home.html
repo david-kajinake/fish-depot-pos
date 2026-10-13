@@ -1,0 +1,198 @@
+{% extends 'frontend/base.html' %}
+{% load static %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'frontend/css/home.css' %}?v={{latest}}">
+<link rel="stylesheet" href="{% static 'frontend/css/sales-form.css' %}?v={{latest}}">
+<style>
+    /* Clean spacing for the new top controls */
+    .dashboard-header-controls {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    /* Base Button Styling */
+.btn {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 25px; /* Pill shape matching the "VIEW MORE" button */
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Primary Button (Add New Sale) - Coral/Orange to match the UI palette */
+.btn-primary {
+    background-color: #FF6F61; /* Coral color matching your badges/buttons */
+    color: #ffffff;
+    box-shadow: 0 4px 6px rgba(255, 111, 97, 0.2);
+}
+
+.btn-primary:hover {
+    background-color: #ff5a4a;
+    box-shadow: 0 6px 8px rgba(255, 111, 97, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Danger Button (Call it a day) - Muted Red */
+.btn-danger {
+    background-color: #d9534f;
+    color: #ffffff;
+    box-shadow: 0 4px 6px rgba(217, 83, 79, 0.2);
+}
+
+.btn-danger:hover {
+    background-color: #c9302c;
+    box-shadow: 0 6px 8px rgba(217, 83, 79, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Secondary/Close Button */
+.btn-secondary {
+    background-color: #5a6268;
+    color: #ffffff;
+}
+
+.btn-secondary:hover {
+    background-color: #434c52;
+}
+
+/* Ensure the controls container spaces them out nicely */
+.dashboard-header-controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+/* Tab Navigation */
+.tabs {
+    display: flex;
+    gap: 10px;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    border-radius: 6px;
+    background-color: transparent;
+    color: #6b7280;
+    box-shadow: none;
+    padding: 8px 16px;
+}
+
+.tab-btn.active {
+    background-color: var(--ocean-blue, #00509E);
+    color: #ffffff;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+}
+</style>
+{% endblock %}          
+{% block content %}
+                                                                                                                
+<!-- 1. NEW ELEMENTS MOVED OUTSIDE THE GRID -->
+<div class="dashboard-header-controls">
+    <button id="btnAddNewSale" class="btn btn-primary">Add New Sale</button>
+    <button id="btnCallItADay" class="btn btn-danger">Call it a day</button>
+</div>
+
+<div class="sales-div" id="sales-div" hidden >
+        {% include 'frontend/components/sales_form_component.html' %}
+</div>
+
+
+<!-- 2. ORIGINAL DASHBOARD GRID REMAINS INTACT -->
+<div class="dashboard-grid">
+    
+    <!-- Left Column: Inventory -->
+    <div class="panel dark-panel inventory-panel">
+        <div class="panel-header">
+            <h3>Tilapia Inventory</h3>
+            <p>Tilapia Sizes and Stock Status</p>
+        </div>
+        <div class="inventory-list" id="inventory-list">
+            <!-- Populated by home.js -->
+            <div class="loading-text">Loading inventory...</div>
+        </div>
+    </div>
+
+    <!-- Middle Column: Chart & Transactions -->
+    <div class="middle-column">
+        
+        <div class="panel dark-panel chart-panel">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <h3>Weekly Sales Overview</h3>
+                    <p><span class="dot"></span> Total Sales (Tilapia)</p>
+                </div>
+                <div class="chart-controls">
+                    <select><option>Chart Type: Bar</option></select>
+                    <select><option>Date View: Current Week</option></select>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="salesChart"></canvas>
+            </div>
+        </div>
+
+        <div class="panel light-panel transactions-panel">
+            <h3>Recent Transactions</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Order ID &darr;</th>
+                        <th>Time</th>
+                        <th>Customer</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="transactions-tbody">
+                    <!-- Populated by home.js -->
+                </tbody>
+            </table>
+        </div>
+        
+    </div>
+
+    <!-- Right Column: Key Metrics -->
+    <div class="right-column">
+        
+        <div class="metric-card">
+            <h4>Net Sales Revenue</h4>
+            <h2 id="metric-sales">KSH0.00</h2>
+            <span class="badge coral-badge">Net Sales</span>
+        </div>
+
+        <div class="metric-card">
+            <h4>Total Weight Sold</h4>
+            <h2 id="metric-weight">0.0 kg</h2>
+            <span class="badge coral-badge">Weight</span>
+        </div>
+
+        <div class="metric-card">
+            <h4>Total Expenses</h4>
+            <h2 id="metric-expenses">KSH0.00</h2>
+            <span class="badge coral-badge">Expenses</span>
+        </div>
+        
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js for rendering the Weekly Sales Bar Chart -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="module" src="{% static 'frontend/js/home.js'%}?v={{latest}}"></script>
+{% endblock %}

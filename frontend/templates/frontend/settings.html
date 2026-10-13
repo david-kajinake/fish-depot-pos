@@ -1,0 +1,390 @@
+{% extends 'frontend/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'frontend/css/settings.css' %}?v={{latest}}">
+{% endblock %}
+
+{% block page_title %}System Settings{% endblock %}
+
+{% block content %}
+<section class="settings-page">
+    <header class="page-header">
+        <div>
+            <p class="eyebrow">Preferences</p>
+            <h1>Settings & Configuration</h1>
+            <p>Customize your system behavior and interface.</p>
+        </div>
+    </header>
+
+    <div class="settings-container">
+        <!-- Sidebar Navigation -->
+        <aside class="settings-sidebar">
+            <ul class="settings-tabs">
+                <li id="automationTabButton" hidden><button class="tab-btn" data-target="automation-tab"><i class="fa-solid fa-robot"></i> Automation</button></li>
+                <li><button class="tab-btn active" data-target="display-tab"><i class="fa-solid fa-desktop"></i> Display</button></li>
+                <li><button class="tab-btn" data-target="profile-tab"><i class="fa-solid fa-user"></i> Profile</button></li>
+                <li id="navUserManagement">
+                    <button class="tab-btn" data-target="users-tab">
+                        <i class="fa-solid fa-users-gear"></i> User Management
+                    </button>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="settings-content">
+            
+            <!-- AUTOMATION TAB -->
+            <div id="automation-tab" class="tab-pane" hidden>
+                <h2><i class="fa-solid fa-robot"></i> System Automation</h2>
+                <p class="text-muted">Global settings affecting the entire system.</p>
+                <form id="systemSettingsForm" class="settings-form">
+                    
+                    <!-- Auto-Send Receipts -->
+                    <div class="setting-card">
+                        <div class="setting-header">
+                            <div>
+                                <h3>Auto-Send Receipts</h3>
+                                <p>Automatically dispatch receipts upon sale completion.</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="receipt_auto_send" name="receipt_auto_send">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="setting-body" id="receipt_options" hidden>
+                            <div class="form-group mb-3">
+                                <label>Target Audience:</label>
+                                <select id="receiptTargetSelect" name="receipt_target" class="form-control">
+                                    <option value="all">All Customers</option>
+                                    <option value="selected">Selected Customers Only</option>
+                                </select>
+                            </div>
+                            <div id="receiptSelectedContainer" class="sub-section" hidden>
+                                <label class="sub-label">Select Customers:</label>
+                                <div class="customer-picker-box">
+                                    <input type="text" id="receiptCustomerSearch" placeholder="Search customers..." class="form-control mb-2">
+                                    <div id="receiptCustomerList" class="checkbox-scroll-list"></div>
+                                </div>
+                                <div class="selected-tags-container" id="receiptCustomerTags"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Auto-Send Bill -->
+                    <div class="setting-card">
+                        <div class="setting-header">
+                            <div>
+                                <h3>Auto-Send Bill</h3>
+                                <p>Automatically send a bill to late-paying customers alongside debt balance.</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="bill_auto_send" name="bill_auto_send">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="setting-body" id="bill_options" hidden>
+                            <div class="form-group mb-3">
+                                <label>Target Audience:</label>
+                                <select id="billTargetSelect" name="bill_target" class="form-control">
+                                    <option value="all">All Customers</option>
+                                    <option value="selected">Selected Customers Only</option>
+                                </select>
+                            </div>
+                            <div id="billSelectedContainer" class="sub-section" hidden>
+                                <label class="sub-label">Select Customers:</label>
+                                <div class="customer-picker-box">
+                                    <input type="text" id="billCustomerSearch" placeholder="Search customers..." class="form-control mb-2">
+                                    <div id="billCustomerList" class="checkbox-scroll-list"></div>
+                                </div>
+                                <div class="selected-tags-container" id="billCustomerTags"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Full-Day Statement Dispatch -->
+                    <div class="setting-card">
+                        <div class="setting-header">
+                            <div>
+                                <h3>Full-Day Statement Dispatch</h3>
+                                <p>Automated summary of Sales, Expenses, Inventory, and Debts.</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="statement_auto_send" name="statement_auto_send">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="setting-body" id="statement_options" hidden>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Delivery Method:</label>
+                                    <select name="statement_method" class="form-control">
+                                        <option value="email">Email</option>
+                                        <option value="sms">SMS</option>
+                                        <option value="whatsapp">WhatsApp</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Dispatch Time:</label>
+                                    <input type="time" name="statement_time" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="form-group mt-3">
+                                <label>Recipient Contacts:</label>
+                                <div class="contacts-manager" data-contact-target="statement_contacts">
+                                    <div class="contacts-list" id="statementContactsList"></div>
+                                    <button type="button" class="btn-secondary btn-sm mt-2 add-contact-trigger">
+                                        <i class="fa-solid fa-plus"></i> Add Contact
+                                    </button>
+                                    <div class="contact-inline-form" hidden>
+                                        <input type="text" placeholder="Enter contact (email/phone)..." class="form-control contact-input-val">
+                                        <div class="inline-form-actions mt-2">
+                                            <button type="button" class="btn-primary btn-sm save-contact-btn">Add</button>
+                                            <button type="button" class="btn-cancel btn-sm cancel-contact-btn">Cancel</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Suspicious Login Alerts -->
+                    <div class="setting-card">
+                        <div class="setting-header">
+                            <div>
+                                <h3>Suspicious Login Alerts</h3>
+                                <p>Alerts triggered after 3 invalid login attempts. <span class="badge">Always ON</span></p>
+                            </div>
+                        </div>
+                        <div class="setting-body">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Alert Method:</label>
+                                    <select name="login_alert_method" class="form-control">
+                                        <option value="email">Email</option>
+                                        <option value="sms">SMS</option>
+                                        <option value="whatsapp">WhatsApp</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group mt-3">
+                                <label>Recipient Contacts:</label>
+                                <div class="contacts-manager" data-contact-target="login_alert_contacts">
+                                    <div class="contacts-list" id="loginContactsList"></div>
+                                    <button type="button" class="btn-secondary btn-sm mt-2 add-contact-trigger">
+                                        <i class="fa-solid fa-plus"></i> Add Contact
+                                    </button>
+                                    <div class="contact-inline-form" hidden>
+                                        <input type="text" placeholder="Enter contact (email/phone)..." class="form-control contact-input-val">
+                                        <div class="inline-form-actions mt-2">
+                                            <button type="button" class="btn-primary btn-sm save-contact-btn">Add</button>
+                                            <button type="button" class="btn-cancel btn-sm cancel-contact-btn">Cancel</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Automate Call It A Day -->
+                    <div class="setting-card">
+                        <div class="setting-header">
+                            <div>
+                                <h3>Automate "Call It A Day"</h3>
+                                <p>Automatically close the day and calculate final balances.</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="auto_close_day" name="auto_close_day">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="setting-body" id="auto_close_options" hidden>
+                            <div class="form-group">
+                                <label>Closing Time:</label>
+                                <input type="time" name="auto_close_time" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions-bar">
+                        <button type="submit" class="btn-primary">Save Automation Settings</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- DISPLAY TAB -->
+            <div id="display-tab" class="tab-pane active">
+                <h2><i class="fa-solid fa-desktop"></i> Display Preferences</h2>
+                <p class="text-muted">Personalize your UI. These settings only apply to your account.</p>
+                <form id="userSettingsForm" class="settings-form">
+                    
+                    <div class="setting-card">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Theme Mode</label>
+                                <select name="theme" class="form-control">
+                                    <option value="light">Light Mode</option>
+                                    <option value="dark">Dark Mode</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Language</label>
+                                <select name="language" class="form-control">
+                                    <option value="en">English</option>
+                                    <option value="fr">French</option>
+                                    <option value="sw">Swahili</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row mt-3">
+                            <div class="form-group">
+                                <label>Font Family</label>
+                                <select name="font_family" class="form-control">
+                                    <option value="'Inter', sans-serif">Inter (Default)</option>
+                                    <option value="'Roboto', sans-serif">Roboto</option>
+                                    <option value="'Open Sans', sans-serif">Open Sans</option>
+                                    <option value="'monospace'">Monospace</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Interface Font Size</label>
+                                <select name="font_size" class="form-control">
+                                    <option value="smaller">Smaller</option>
+                                    <option value="small">Small</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="large">Large</option>
+                                    <option value="larger">Larger</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-header mt-4" style="border-top: 1px solid var(--line); padding-top: 1rem;">
+                            <div>
+                                <h3>Notification Sounds</h3>
+                                <p>Play a beep on successful actions and alerts.</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" name="notification_sound">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-actions-bar">
+                        <button type="submit" class="btn-primary">Apply Display Changes</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- PROFILE TAB -->
+            <div id="profile-tab" class="tab-pane">
+                <h2><i class="fa-solid fa-user"></i> Account Profile</h2>
+                <p class="text-muted">Update your login credentials.</p>
+                <form id="profileForm" class="settings-form">
+                    <div class="setting-card">
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" id="profileUsername" name="username" class="form-control" required>
+                        </div>
+                        <div class="form-group mt-3">
+                            <label>New Password</label>
+                            <input type="password" name="password" placeholder="Leave blank to keep current password" class="form-control">
+                            <small class="form-hint">Must be at least 8 characters.</small>
+                        </div>
+                    </div>
+                    <div class="form-actions-bar">
+                        <button type="submit" class="btn-primary">Update Profile</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- USER MANAGEMENT TAB (Admin/Staff Only) -->
+            <div id="users-tab" class="tab-pane" hidden>
+                <div class="tab-header-flex">
+                    <div>
+                        <h2><i class="fa-solid fa-users-gear"></i> User Management & Permissions</h2>
+                        <p class="text-muted">Manage registered operators and configure granular access controls.</p>
+                    </div>
+                    <div class="view-toggle-wrap">
+                        <button type="button" class="btn-secondary btn-sm active-view" id="viewTableBtn" title="Table View">
+                            <i class="fa-solid fa-table"></i> Table
+                        </button>
+                        <button type="button" class="btn-secondary btn-sm" id="viewCardsBtn" title="Card View">
+                            <i class="fa-solid fa-id-card"></i> Cards
+                        </button>
+                    </div>
+                </div>
+
+                <!-- USERS LIST SECTION -->
+                <div class="setting-card mt-3">
+                    <h3>Registered Operators</h3>
+                    <p class="text-muted text-sm">Click any user row or card to view detailed activity (coming soon).</p>
+                    
+                    <!-- Table Format Container -->
+                    <div id="usersTableContainer" class="table-scroll-wrap mt-3">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <tr><td colspan="4" class="empty-state">Loading users...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Flexbox Cards Container (Hidden by default) -->
+                    <div id="usersCardsContainer" class="user-cards-grid mt-3" hidden>
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+
+                <!-- PERMISSIONS MATRIX SECTION -->
+                <div class="setting-card mt-4">
+                    <div class="setting-header">
+                        <div>
+                            <h3>Granular Permission Matrix</h3>
+                            <p>Check or uncheck boxes to grant or revoke specific operational privileges per user.</p>
+                        </div>
+                        <button type="button" id="savePermissionsBtn" class="btn-primary btn-sm">
+                            <i class="fa-solid fa-floppy-disk"></i> Save Permissions
+                        </button>
+                    </div>
+                    
+                    <div class="matrix-scroll-wrap mt-3">
+                        <table class="permissions-matrix-table">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Call Day</th>
+                                    <th>Sales</th>
+                                    <th>Supply</th>
+                                    <th>Expenses</th>
+                                    <th>Debts</th>
+                                    <th>SMS/WA</th>
+                                    <th>Edit Cust</th>
+                                    <th>Edit Supp</th>
+                                    <th>Statements</th>
+                                </tr>
+                            </thead>
+                            <tbody id="permissionsMatrixBody">
+                                <tr><td colspan="10" class="empty-state">Loading permissions matrix...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script type="module" src="{% static 'frontend/js/settings.js' %}?v={{latest}}"></script>
+{% endblock %}

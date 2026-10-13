@@ -1,0 +1,83 @@
+ /* Standalone styling for the login page */
+        body {
+            background-color: var(--ocean-blue);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            background-color: var(--text-light);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .login-header i {
+            color: var(--coral);
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+        }
+        .login-header h2 {
+            color: var(--ocean-blue-dark);
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--ocean-blue-dark);
+            font-weight: 600;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background-color: var(--ice-blue-light);
+            color: var(--text-dark);
+            font-size: 1rem;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--ocean-blue);
+            box-shadow: 0 0 0 2px rgba(0, 80, 158, 0.2);
+        }
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--coral);
+            color: var(--text-light);
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 10px;
+        }
+        .btn-login:hover {
+            background-color: var(--coral-hover);
+        }
+        #error-message {
+            color: #d93025;
+            background-color: #fce8e6;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            display: none;
+        }
+        .admin-note {
+            margin-top: 25px;
+            font-size: 0.85rem;
+            color: #666;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }

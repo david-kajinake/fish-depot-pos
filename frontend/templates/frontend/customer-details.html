@@ -1,0 +1,39 @@
+{% extends 'frontend/base.html' %}
+{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'frontend/css/customers.css' %}?v={{latest}}"><link rel="stylesheet" href="{% static 'frontend/css/customer-details.css' %}?v={{latest}}">{% endblock %}
+{% block page_title %}Customer Profile{% endblock %}
+{% block content %}
+<section class="customer-details-page">
+    <a class="back-link" href="/customers/">← Customers</a>
+    <article class="detail-hero">
+        <div class="detail-avatar" id="customerAvatar">—</div>
+        <div>
+            <p class="customer-eyebrow">Customer profile</p>
+            <h1 id="detailCustomerName">Loading…</h1>
+            <span id="detailStatus" class="customer-status"></span>
+        </div><div class="detail-actions"><button id="showCustomerEdit" class="customer-secondary">Edit details</button><button id="showCustomerStatement" class="customer-secondary">Send statement</button><button id="showDetailPayment" class="customer-primary">Record balance payment</button></div></article>
+    <section class="detail-stats">
+        <article>
+            <span>Balance debt</span>
+            <strong id="detailDebt">KES 0.00</strong>
+        </article>
+        <article><span>Total weight bought</span>
+            <strong id="detailWeight">0.00 kg</strong>
+        </article>
+        <article>
+            <span>Total spent</span>
+            <strong id="detailSpent">KES 0.00</strong>
+        </article>
+        <article>
+            <span>Contact</span>
+            <strong id="detailContact">—</strong>
+        </article>
+    </section>
+    <section id="customerEditPanel" class="detail-card" hidden><h2>Edit customer</h2>{% include 'frontend/components/customer_edit_form_component.html' %}</section>
+    <section id="detailPaymentPanel" class="detail-card" hidden><h2>Record balance payment</h2>{% include 'frontend/components/customer_detail_balance_payment_form_component.html' %}</section>
+    <section class="detail-card"><div class="list-title"><div><p class="customer-eyebrow">Sales ledger</p><h2>Customer sales history</h2><p>Sales are grouped by day.</p></div></div><div class="customer-table-wrap"><table><thead><tr><th>Date</th><th>Reference</th><th>Items</th><th>Weight</th><th>Amount</th></tr></thead><tbody id="customerHistoryBody"><tr><td colspan="5" class="customer-empty">Loading sales…</td></tr></tbody></table></div></section>
+    <section class="detail-card"><p class="customer-eyebrow">Direct outreach</p><h2>Send customer message</h2>{% include 'frontend/components/customer_detail_message_form_component.html' %}</section>
+</section>
+<div id="customerStatementModal" class="customer-modal" hidden><div class="modal-card"><button id="closeCustomerStatement" class="modal-close" type="button">&times;</button><h2>Send customer statement</h2>{% include 'frontend/components/customer_statement_form_component.html' %}</div></div>
+{% endblock %}
+{% block extra_js %}<script type="module" src="{% static 'frontend/js/customer-details.js' %}?v={{latest}}"></script>{% endblock %}

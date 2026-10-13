@@ -1,0 +1,191 @@
+{% extends "frontend/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'frontend/css/inventory.css' %}?v={{latest}}">
+<!-- Chart.js for supply analytics -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block page_title %}Inventory & Supply Management{% endblock %}
+
+{% block content %}
+<div class="inventory-container">
+    
+    <!-- TOP HEADER & QUICK ACTIONS -->
+    <div class="inventory-header">
+        <div>
+            <h1 class="page-heading">Inventory & Stock Center</h1>
+            <p class="page-subheading">Monitor real-time freezer levels, record new incoming stock, and analyze supply trends.</p>
+        </div>
+        <button id="open-supply-modal-button" class="btn-primary">
+            <i class="fa-solid fa-boxes-packing"></i> Record New Supply
+        </button>
+    </div>
+
+    <!-- STATS OVERVIEW CARDS -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon icon-blue"><i class="fa-solid fa-cubes"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">Total Stock Weight</span>
+                <h3 id="statTotalWeight" class="stat-value">0.00 <small>KG</small></h3>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon icon-emerald"><i class="fa-solid fa-vault"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">Stock Asset Value</span>
+                <h3 id="statTotalValue" class="stat-value">KES 0.00</h3>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon icon-coral"><i class="fa-solid fa-truck-ramp-box"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">Invoices Received</span>
+                <h3 id="statTotalInvoices" class="stat-value">0</h3>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon icon-purple"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">Low Stock Alerts</span>
+                <h3 id="statLowStockCount" class="stat-value">0</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- ANALYTICS CHARTS SECTION -->
+    <div class="analytics-section card">
+        <div class="card-header analytics-header">
+            <div>
+                <h3><i class="fa-solid fa-chart-column"></i> Supply Trend Analytics</h3>
+                <p>Compare supply volume (KG) across time periods</p>
+            </div>
+            <div class="chart-tab-buttons">
+                <button class="chart-tab-btn active" data-chart="day">Days of Week</button>
+                <button class="chart-tab-btn" data-chart="week">Weeks of Month</button>
+                <button class="chart-tab-btn" data-chart="month">Months of Year</button>
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="inventoryAnalyticsChart"></canvas>
+        </div>
+    </div>
+
+    <!-- LIVE STOCK STATUS TABLE -->
+    <div class="card inventory-table-card">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-fish"></i> Live Stock Status</h3>
+            <span class="badge-info" id="liveStockBadge">Updating real-time...</span>
+        </div>
+        <div class="table-responsive">
+            <table id="currentStockTable">
+                <thead>
+                    <tr>
+                        <th>Fish Size / Category</th>
+                        <th>Current Stock (KG)</th>
+                        <th>Last Buying Price (KES)</th>
+                        <th>Selling Price (KES)</th>
+                        <th>Est. Category Value (KES)</th>
+                        <th>Stock Status</th>
+                    </tr>
+                </thead>
+                <tbody id="stockTableBody">
+                    <tr><td colspan="6" class="text-center">Loading stock status...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PAST SUPPLIES ACCORDION SECTION -->
+    <div class="card past-supplies-card">
+        <div class="card-header search-header">
+            <h3><i class="fa-solid fa-clock-rotate-left"></i> Supply History & Invoices</h3>
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="historySearchInput" placeholder="Search supplier or invoice #...">
+            </div>
+        </div>
+        <div class="past-supply-body" id="past-supply-body">
+            <div class="loading-state">
+                <i class="fa-solid fa-circle-notch fa-spin"></i> Fetching past supply records...
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- RECORD SUPPLY MODAL -->
+<div id="supplyModal" class="modal-overlay">
+    <div class="modal-content large" id="supply-modal-content">
+        <div class="modal-header">
+            <div>
+                <h3><i class="fa-solid fa-file-circle-plus"></i> Record Supply Invoice</h3>
+                <p>Receive stock from vendor and update current inventory</p>
+            </div>
+            <button id="close-supply-modal-button" class="close-btn">&times;</button>
+        </div>
+        
+        <form id="supply-form">
+            <div class="form-meta-grid">
+                <div class="form-group">
+                    <label for="supplierSelect">Supplier Name <span class="required">*</span></label>
+                    <select id="supplierSelect" required>
+                        <option value="">Select Supplier...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="invoiceRef">Invoice Number / Reference</label>
+                    <input type="text" id="invoiceRef" placeholder="e.g. INV-2026-089">
+                </div>
+            </div>
+
+            <div class="table-responsive modal-table-wrapper">
+                <table class="dynamic-form-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">FISH SIZE</th>
+                            <th style="width: 15%;">QUANTITY (PCS)</th>
+                            <th style="width: 18%;">WEIGHT (KG)</th>
+                            <th style="width: 18%;">RATE (PER KG)</th>
+                            <th style="width: 18%;">AMOUNT (KES)</th>
+                            <th style="width: 6%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="supplyRowContainer">
+                        <!-- Dynamic rows populated by JS -->
+                    </tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <td>GRAND TOTALS</td>
+                            <td id="totalQty">0</td>
+                            <td id="totalWeight">0.00</td>
+                            <td>—</td>
+                            <td id="totalAmount">0.00</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="modal-actions-bar">
+                <button type="button" id="add-supply-row-button" class="btn-secondary">
+                    <i class="fa-solid fa-plus"></i> Add Item Row
+                </button>
+                <div class="action-buttons-right">
+                    <button type="button" class="btn-cancel" id="cancel-modal-btn">Cancel</button>
+                    <button type="submit" class="btn-primary" id="save-invoice-btn">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Invoice & Update Stock
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script type="module" src="{% static 'frontend/js/inventory.js' %}?v={{latest}}"></script>
+{% endblock %}

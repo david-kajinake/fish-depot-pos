@@ -1,0 +1,72 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Fresh Victoria Fish POS{% endblock %}</title>
+    
+    <!-- Base Styling -->
+    <link rel="stylesheet" href="{% static 'frontend/css/base.css' %}?v={{latest}}">
+    
+    <!-- FontAwesome for standard POS icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- 60% Ocean Blue: Primary Visual Block -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <!-- 10% Coral: Subtle logo details -->
+                <h2><i class="fa-solid fa-fish-fins logo-accent"></i> Fresh Victoria Fish</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a data-path="/" href="{% url 'home' %}"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
+                    <li><a data-path="sales" href="{% url 'sales' %}"><i class="fa-solid fa-cash-register"></i> Sales Terminal</a></li>
+                    <li><a data-path="inventory" href="{% url 'inventory' %}" ><i class="fa-solid fa-boxes-stacked"></i> Inventory</a></li>
+                    <li><a data-path="expenses" href="{% url 'expenses' %}" ><i class="fa-solid fa-money-bill-wave"></i> Expenses</a></li>
+                    <li><a data-path="customers" href="{% url 'customers' %}" ><i class="fa-solid fa-users"></i> Customers</a></li>
+                    <li><a data-path="suppliers" href="{% url 'suppliers' %}" ><i class="fa-solid fa-truck"></i> Suppliers</a></li>
+                    <li><a data-path="settings" href="{% url 'settings' %}" ><i class="fa-solid fa-gears"></i> Settings</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <div class="main-wrapper">
+            <!-- 60% Ocean Blue: Website Headers -->
+            <header class="top-header">
+                <div class="header-left">
+                    <button id="mobile-menu-btn" class="menu-btn"><i class="fa-solid fa-bars"></i></button>
+                    <h3 class="page-title">{% block page_title %}Dashboard{% endblock %}</h3>
+                </div>
+                <div class="header-right">
+                    <span class="user-info">
+                        <i class="fa-solid fa-circle-user"></i> 
+                        <span id="current-user-name">Loading…</span>
+                    </span>
+                    <button id="logout-btn" class="btn-accent">
+                        <i class="fa-solid fa-right-from-bracket"></i> Logout
+                    </button>
+                </div>
+            </header>
+
+            <main class="content-area">
+                {% block content %}
+                <!-- Child templates will inject their HTML here -->
+                {% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- Base UI Logic -->
+    <script type="module" src="{% static 'frontend/js/base.js' %}?v={{latest}}"></script>
+    <!-- Authentication Logic -->
+    <script type="module" src="{% static 'frontend/js/session.js' %}?v={{latest}}"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

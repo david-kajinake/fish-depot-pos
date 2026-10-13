@@ -1,0 +1,159 @@
+{% extends 'frontend/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'frontend/css/expenses.css' %}?v={{latest}}">
+{% endblock %}
+
+{% block page_title %}Expenses Management{% endblock %}
+
+{% block content %}
+<section class="expenses-page">
+    
+    <!-- HEADER -->
+    <header class="page-header">
+        <div>
+            <p class="eyebrow">Financial Tracking</p>
+            <h1>Operating Expenses</h1>
+            <p>Monitor daily expenditure and generate financial statements.</p>
+        </div>
+        <div class="header-actions">
+            <button id="openStatementBtn" class="btn-secondary">
+                <i class="fa-solid fa-file-pdf"></i> Generate Statement
+            </button>
+            <button id="openExpenseBtn" class="btn-primary">
+                <i class="fa-solid fa-plus"></i> Record Expense
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN GRID: LIST & CHARTS -->
+    <div class="content-grid">
+        <!-- EXPENSES LIST -->
+        <section class="card list-card">
+            <div class="card-header">
+                <h2>Expense Ledger</h2>
+                <p>Scroll to view historical daily expenses.</p>
+            </div>
+            <div class="table-scroll-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Item Name</th>
+                            <th class="text-right">Amount (KES)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expensesTableBody">
+                        <tr><td colspan="3" class="empty-state">Loading expenses...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- CHARTS SECTION -->
+        <section class="charts-container">
+            
+            <!-- TIME COMPARISON CHART -->
+            <article class="card chart-card">
+                <div class="chart-header">
+                    <div>
+                        <h2>Comparison by Time</h2>
+                        <p>Evaluate spending trends over different periods.</p>
+                    </div>
+                    <div class="chart-tabs">
+                        <button class="tab-btn active" data-time-tab="weekly">Weekly</button>
+                        <button class="tab-btn" data-time-tab="monthly">Monthly</button>
+                        <button class="tab-btn" data-time-tab="yearly">Yearly</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="timeChart"></canvas>
+                </div>
+            </article>
+
+            <!-- ITEM COMPARISON CHART -->
+            <article class="card chart-card">
+                <div class="chart-header">
+                    <div>
+                        <h2>Comparison by Item</h2>
+                        <p>Analyze capital distribution across items.</p>
+                    </div>
+                    <select id="itemTimeframeSelect" class="chart-select">
+                        <option value="today">Today</option>
+                        <option value="week" selected>This Week</option>
+                        <option value="month">Last 30 Days</option>
+                    </select>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="itemChart"></canvas>
+                </div>
+            </article>
+            
+        </section>
+    </div>
+</section>
+
+<!-- RECORD EXPENSE MODAL -->
+<div id="expenseModal" class="modal-overlay" hidden>
+    <div class="modal-card">
+        <button data-close-modal="expenseModal" class="modal-close">&times;</button>
+        <h2><i class="fa-solid fa-receipt"></i> Record New Expense</h2>
+        {% include 'frontend/components/expense_form_component.html' %}
+    </div>
+</div>
+
+<!-- STATEMENT GENERATOR MODAL -->
+<div id="statementModal" class="modal-overlay" hidden>
+    <div class="modal-card">
+        <button data-close-modal="statementModal" class="modal-close">&times;</button>
+        <h2><i class="fa-solid fa-file-invoice"></i> Generate Statement</h2>
+        <form id="statementForm" class="custom-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>From Date <span class="required">*</span></label>
+                    <input type="date" id="stmtFrom" required>
+                </div>
+                <div class="form-group">
+                    <label>To Date <span class="required">*</span></label>
+                    <input type="date" id="stmtTo" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Delivery Method</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="delivery_method" value="download" checked> Download directly to device
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="delivery_method" value="email"> Send via Email
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group" id="emailGroup" hidden>
+                <label>Destination Email <span class="required">*</span></label>
+                <input type="email" id="stmtEmail" placeholder="e.g. accountant@example.com">
+            </div>
+
+            <div class="form-group">
+                <label>Confirm Password <span class="required">*</span></label>
+                <input type="password" id="stmtPassword" required placeholder="Enter your password to authorize">
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-cancel" data-close-modal="statementModal">Cancel</button>
+                <button class="btn-primary" type="submit" id="stmtSubmitBtn">
+                    <i class="fa-solid fa-check"></i> Generate
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="module" src="{% static 'frontend/js/expenses.js' %}?v={{latest}}"></script>
+{% endblock %}

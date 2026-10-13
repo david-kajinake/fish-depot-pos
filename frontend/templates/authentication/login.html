@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Fresh Victoria Fish POS</title>
+    
+    <!-- Base Styling for color variables -->
+    <link rel="stylesheet" href="{% static 'frontend/css/login.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <i class="fa-solid fa-fish-fins"></i>
+            <h2>Fresh Victoria POS</h2>
+        </div>
+        
+        <div id="error-message"></div>
+        
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn-login" id="submit-btn">Sign In</button>
+        </form>
+        
+        <div class="admin-note">
+            <p><i class="fa-solid fa-lock"></i> Accounts are strictly managed by system administrators.</p>
+        </div>
+    </div>
+
+    <script type="module" src="{% static 'frontend/js/session.js' %}"></script>
+</body>
+</html>

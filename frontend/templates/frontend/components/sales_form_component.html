@@ -1,0 +1,206 @@
+<div id="salesFormContainer" class="sales-card">
+    <!-- Top Tab Navigation -->
+    <div class="sales-tabs">
+        <button id="btnTabStock" class="tab-btn active" type="button">
+            <i class="fa-solid fa-fish"></i> Fish from Stock
+        </button>
+        <button id="btnTabOutside" class="tab-btn" type="button">
+            <i class="fa-solid fa-fire-burner"></i> Outside Frying Only
+        </button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: FISH FROM STOCK                     -->
+    <!-- ========================================== -->
+    <div id="tabStockContent" class="tab-content active">
+        
+        <!-- Customer Selection / Input -->
+        <div class="form-group margin-bottom-lg">
+            <label for="stockCustomer">Customer (Optional)</label>
+            <input type="text" id="stockCustomer" class="form-control" list="saleCustomerOptions" autocomplete="off" placeholder="Start typing a customer name">
+            <datalist id="saleCustomerOptions"></datalist>
+        </div>
+
+        <div class="section-title">Add Stock Item to Cart</div>
+        
+        <!-- Input Row 1: Size, Qty, Weight, Rate -->
+        <div class="form-grid-4">
+            <div class="form-group">
+                <label for="stockFishSize">Fish Size *</label>
+                <select id="stockFishSize" class="form-control">
+                    <option value="">Select Size</option>
+                    <option value="1">1</option>
+                    <option value="1">2</option>
+                    <option value="3">3</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="stockQty">Qty (Pieces) *</label>
+                <input type="number" id="stockQty" class="form-control" min="1" value="1">
+            </div>
+            <div class="form-group">
+                <label for="stockWeight">Weight (Kg) *</label>
+                <input type="number" step="0.01" id="stockWeight" class="form-control" placeholder="0.00">
+            </div>
+            <div class="form-group">
+                <label for="stockRate">Rate (per Kg) *</label>
+                <input type="number" id="stockRate" class="form-control" placeholder="0">
+            </div>
+        </div>
+
+        <!-- Input Row 2: Frying Checkbox, Frying Fee, Item Total -->
+        <div class="form-grid-3 align-items-center margin-top-md">
+            <div class="form-group checkbox-container">
+                <label for="stockIsFried">
+                    <input type="checkbox" id="stockIsFried"> Is Fried?
+                </label>
+            </div>
+            <div class="form-group">
+                <label for="stockFryingFee">Frying Fee</label>
+                <input type="number" id="stockFryingFee" class="form-control" placeholder="0" disabled value="0">
+            </div>
+            <div class="form-group">
+                <label>Line Total</label>
+                <div id="stockLineTotalDisplay" class="calc-preview">KSH 0</div>
+            </div>
+        </div>
+
+        <!-- Add to Cart Action -->
+        <button id="btnAddStockToCart" type="button" class="btn-dashed-action margin-top-lg">
+            + Add to Stock Cart
+        </button>
+
+        <!-- Stock Ticket (Cart Table) -->
+        <div class="ticket-container margin-top-lg">
+            <div class="ticket-header">Stock Ticket</div>
+            <table class="cart-table">
+                <thead>
+                    <tr>
+                        <th>SIZE</th>
+                        <th>QTY</th>
+                        <th>WEIGHT</th>
+                        <th>RATE</th>
+                        <th>FRY FEE</th>
+                        <th>TOTAL</th>
+                        <th class="text-center">X</th>
+                    </tr>
+                </thead>
+                <tbody id="stockCartTableBody">
+                    <tr class="empty-row"><td colspan="7">No items added to stock cart yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Stock Checkout Banner -->
+        <div class="checkout-banner margin-top-lg">
+            <div class="total-label">Stock Total: <span id="stockCartTotalDisplay">0.00</span></div>
+            <div class="amount-paid-field"><label for="stockAmountPaidNow">Amount Paid Now</label><input type="number" id="stockAmountPaidNow" class="form-control" min="0" step="0.01" value="0"><small>Extra payment reduces this customer's existing debt.</small></div>
+            <button id="btnCompleteStockSale" type="button" class="btn-complete">
+                Complete Stock Sale
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: OUTSIDE FRYING ONLY                 -->
+    <!-- ========================================== -->
+    <div id="tabOutsideContent" class="tab-content" style="display: none;">
+        
+        <!-- Source Input -->
+        <div class="form-group margin-bottom-lg">
+            <label for="outsideSource">Source / Customer Name *</label>
+            <input type="text" id="outsideSource" class="form-control" placeholder="Where did the fish come from?">
+        </div>
+
+        <div class="section-title">Add Frying Task to Cart</div>
+
+        <!-- Input Row: Size, Qty, Frying Fee -->
+        <div class="form-grid-3">
+            <div class="form-group">
+                <label for="outsideFishSize">Fish Size</label>
+                <select id="outsideFishSize" class="form-control">
+                    <option value="">Select Size (Optional)</option>
+                    <option value="2">Size 2</option>
+                    <option value="3">Size 3</option>
+                    <option value="5">Size 5</option>
+                    <option value="6">Size 6</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="outsideQty">Quantity (Pieces) *</label>
+                <input type="number" id="outsideQty" class="form-control" min="1" value="1">
+            </div>
+            <div class="form-group">
+                <label for="outsideFee">Total Frying Fee Charged *</label>
+                <input type="number" id="outsideFee" class="form-control" placeholder="0">
+            </div>
+        </div>
+
+        <!-- Add to Frying Cart Action -->
+        <button id="btnAddOutsideToCart" type="button" class="btn-dashed-action margin-top-lg">
+            + Add to Frying Cart
+        </button>
+
+        <!-- Frying Ticket (Cart Table) -->
+        <div class="ticket-container margin-top-lg">
+            <div class="ticket-header">Frying Ticket</div>
+            <table class="cart-table">
+                <thead>
+                    <tr>
+                        <th>SOURCE/OWNER</th>
+                        <th>SIZE</th>
+                        <th>QTY</th>
+                        <th>FRYING FEE</th>
+                        <th class="text-center">X</th>
+                    </tr>
+                </thead>
+                <tbody id="outsideCartTableBody">
+                    <tr class="empty-row"><td colspan="5">No items added to frying cart yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Frying Checkout Banner -->
+        <div class="checkout-banner margin-top-lg">
+            <div class="total-label">Frying Total: <span id="outsideCartTotalDisplay">0.00</span></div>
+            <button id="btnCompleteOutsideSale" type="button" class="btn-complete">
+                Complete Frying Order
+            </button>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

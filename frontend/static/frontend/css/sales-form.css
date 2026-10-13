@@ -1,0 +1,144 @@
+/* Container Card */
+.sales-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    max-width: 900px;
+    margin: 0 auto 25px auto;
+}
+
+/* Tabs */
+.sales-tabs {
+    display: flex;
+    border-bottom: 2px solid #e5e7eb;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 12px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-size: 15px;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+    color: var(--ocean-blue, #00509E);
+    border-bottom-color: var(--ocean-blue, #00509E);
+    background-color: #f0f7ff;
+}
+
+/* Grids & Forms */
+.form-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.form-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.margin-top-md { margin-top: 12px; }
+.margin-top-lg { margin-top: 20px; }
+.margin-bottom-lg { margin-bottom: 20px; }
+
+.section-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-dark, #1f2937);
+    margin-bottom: 12px;
+}
+
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 13px; font-weight: 600; color: #4b5563; }
+
+.form-control {
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+}
+.form-control:focus { border-color: var(--ocean-blue, #00509E); }
+.form-control:disabled { background-color: #f3f4f6; cursor: not-allowed; }
+
+.checkbox-container {
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 10px;
+}
+
+.calc-preview {
+    padding: 10px 12px;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-weight: bold;
+    color: var(--ocean-blue, #00509E);
+}
+
+/* Dashed Add Button */
+.btn-dashed-action {
+    width: 100%;
+    padding: 12px;
+    background-color: #f0f9ff;
+    border: 2px dashed #0284c7;
+    border-radius: 8px;
+    color: #0284c7;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-dashed-action:hover { background-color: #e0f2fe; }
+
+/* Ticket / Cart Table */
+.ticket-container {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.ticket-header {
+    background-color: #f9fafb;
+    padding: 10px 15px;
+    font-weight: bold;
+    font-size: 14px;
+    border-bottom: 1px solid #e5e7eb;
+}
+.cart-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cart-table th, .cart-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #f3f4f6; }
+.cart-table th { background-color: #f9fafb; color: #6b7280; font-weight: 600; }
+
+.btn-remove-row {
+    background: #fee2e2;
+    color: #ef4444;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-weight: bold;
+}
+.btn-remove-row:hover { background: #fca5a5; }
+
+/* Complete Banner */
+.checkout-banner {
+    background-color: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.total-label { font-size: 18px; font-weight: 800; color: #059669; }
+.btn-complete {
+    background-color: #10b981;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 15px;
+}
+.btn-complete:hover { background-color: #059669; }

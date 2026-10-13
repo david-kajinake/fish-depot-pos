@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:alpine
+    container_name: fish_redis
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    container_name: fish_django_web
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+
+  celery:
+    build: .
+    container_name: fish_celery_worker
+    command: celery -A core worker --loglevel=info
+    volumes:
+      - .:/app
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
