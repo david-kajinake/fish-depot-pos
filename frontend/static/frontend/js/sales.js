@@ -1,5 +1,6 @@
 import { apiFetch } from './session.js';
 import { initSalesForm } from './utils/salesUtils.js';
+import { queueStatement, statementPayload, waitForStatement } from './utils/statementTasks.js';
 
 let businessDays = [];
 let trendChart;
@@ -12,6 +13,7 @@ const displayDate = (date) => new Intl.DateTimeFormat('en-KE', { dateStyle: 'ful
 document.addEventListener('DOMContentLoaded', async () => {
     initSalesForm();
     configureSaleFormPanel();
+    configureStatementRequest();
     document.querySelectorAll('.chart-tab').forEach((button) => button.addEventListener('click', () => {
         document.querySelectorAll('.chart-tab').forEach((tab) => tab.classList.toggle('active', tab === button));
         renderTrendChart(button.dataset.period);
@@ -24,6 +26,22 @@ function configureSaleFormPanel() {
     const open = () => { panel.hidden = false; panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
     document.getElementById('toggleSaleForm').addEventListener('click', open);
     document.getElementById('closeSaleForm').addEventListener('click', () => { panel.hidden = true; });
+}
+
+function configureStatementRequest() {
+    openSalesStatement.onclick = () => salesStatementModal.hidden = false;
+    document.querySelectorAll('[data-close-statement]').forEach((button) => button.onclick = () => document.getElementById(button.dataset.closeStatement).hidden = true);
+    salesStatementForm.onsubmit = async (event) => {
+        event.preventDefault();
+        const status = salesStatementStatus;
+        try {
+            status.textContent = 'Queuing statement…';
+            const taskId = await queueStatement('/api/sales/send-sales-statement/', statementPayload(event.currentTarget));
+            status.textContent = `Queued. Task ${taskId.slice(0, 8)} is processing…`;
+            await waitForStatement(taskId, (task) => status.textContent = task.status || 'Generating PDF…');
+            status.textContent = 'Statement emailed successfully.';
+        } catch (error) { status.textContent = error.detail || error.message || 'Could not queue statement.'; }
+    };
 }
 
 async function loadSalesData() {

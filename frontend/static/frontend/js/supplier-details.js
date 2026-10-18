@@ -1,4 +1,5 @@
 import { apiFetch } from './session.js';
+import { queueStatement, waitForStatement } from './utils/statementTasks.js';
 
 let currentSupplierId = null;
 let currentSupplierData = null;
@@ -45,7 +46,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (currentSupplierData) {
             document.getElementById('statementEmail').value = currentSupplierData.email || '';
         }
-        document.getElementById('confirmPassword').value = '';
         statementModal.style.display = 'flex';
     });
 
@@ -175,26 +175,24 @@ async function handleSendStatement(e) {
     e.preventDefault();
 
     const email = document.getElementById('statementEmail').value.trim();
-    const password = document.getElementById('confirmPassword').value;
     const submitBtn = document.getElementById('sendStatementSubmitBtn');
+    const status = document.getElementById('supplierStatementStatus');
 
-    if (!email || !password) {
-        alert("Please fill in all required fields.");
+    if (!email) {
+        alert("Enter a destination email address.");
         return;
     }
-
-    const payload = {
-        email: email,
-        password: password
-    };
+    const start_date = document.getElementById('supplierStatementStart').value;
+    const end_date = document.getElementById('supplierStatementEnd').value;
+    if (Boolean(start_date) !== Boolean(end_date)) return alert('Provide both dates or leave both blank.');
 
     try {
         submitBtn.disabled = true;
         submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Sending...`;
 
-        // No statement endpoint exists yet.  Do not pretend a static page can
-        // perform this backend action; keep it explicit until the API exists.
-        alert('Sending supplier statements is not available yet.');
+        const taskId = await queueStatement(`/api/suppliers/${currentSupplierId}/send-single-supplier-statement/`, { email, ...(start_date ? { start_date, end_date } : {}) });
+        await waitForStatement(taskId, (task) => status.textContent = task.status || 'Generating PDF…');
+        status.textContent = 'Statement emailed successfully.';
     } catch (err) {
         console.error("Statement send error:", err);
         alert("Network error while sending statement.");

@@ -21,6 +21,9 @@ def inventory(request):
 def expenses(request):
     return render(request, 'frontend/expenses.html')
 
+def expense_details(request, expense_id):
+    return render(request, 'frontend/expense-details.html')
+
 def customers(request):
     return render(request, 'frontend/customers.html')
 

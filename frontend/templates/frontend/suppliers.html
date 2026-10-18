@@ -18,9 +18,9 @@
             <h1 class="page-heading">Suppliers Directory</h1>
             <p class="page-subheading">Manage your stock vendors and view their historical supply volumes.</p>
         </div>
-        <button id="addSupplierBtn" class="btn-primary">
+        <div class="header-actions"><button id="openAllSuppliersStatement" class="btn-secondary"><i class="fa-solid fa-file-pdf"></i> Send supplies statement</button><button id="addSupplierBtn" class="btn-primary">
             <i class="fa-solid fa-user-plus"></i> Add A New Supplier
-        </button>
+        </button></div>
     </div>
 
     <!-- CONTROLS & VIEWS -->
@@ -79,6 +79,7 @@
     </div>
 
 </div>
+<div id="allSuppliersStatementModal" class="modal-overlay" hidden><div class="modal-content"><div class="modal-header"><h3>Send all suppliers statement</h3><button type="button" class="close-btn" data-close-statement="allSuppliersStatementModal">&times;</button></div><form id="allSuppliersStatementForm"><div class="form-group"><label>Destination email</label><input name="email" type="email" required></div><div class="form-group"><label>From date <input name="start_date" type="date"></label></div><div class="form-group"><label>To date <input name="end_date" type="date"></label></div><button class="btn-primary">Queue statement</button><output id="allSuppliersStatementStatus"></output></form></div></div>
 
 <!-- ADD SUPPLIER MODAL -->
 <div id="supplierModal" class="modal-overlay">

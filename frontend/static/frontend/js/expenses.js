@@ -1,4 +1,5 @@
 import { apiFetch } from './session.js';
+import { queueStatement, waitForStatement } from './utils/statementTasks.js';
 
 let allExpenses = [];
 let timeChartInstance = null;
@@ -22,22 +23,6 @@ function bindUI() {
     // Form Submissions
     document.getElementById('expenseForm').onsubmit = handleExpenseSubmit;
     document.getElementById('statementForm').onsubmit = handleStatementSubmit;
-
-    // Delivery Method Toggle
-    document.querySelectorAll('input[name="delivery_method"]').forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            const emailGroup = document.getElementById('emailGroup');
-            const emailInput = document.getElementById('stmtEmail');
-            if (e.target.value === 'email') {
-                emailGroup.hidden = false;
-                emailInput.required = true;
-            } else {
-                emailGroup.hidden = true;
-                emailInput.required = false;
-                emailInput.value = '';
-            }
-        });
-    });
 
     // Chart Controls
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -90,7 +75,7 @@ function renderExpenseList() {
         items.forEach(exp => {
             const timeStr = new Date(exp.timestamp || exp.created_at || new Date()).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' });
             html += `
-                <tr>
+                <tr class="expense-row" data-id="${esc(exp.id)}">
                     <td>${timeStr}</td>
                     <td><strong>${esc(exp.item_name)}</strong></td>
                     <td class="text-right">${money.format(Number(exp.amount))}</td>
@@ -99,6 +84,7 @@ function renderExpenseList() {
         });
     }
     tbody.innerHTML = html;
+    tbody.querySelectorAll('.expense-row').forEach((row) => row.onclick = () => window.location.assign(`/expenses/${row.dataset.id}/`));
 }
 
 function populateDatalist() {
@@ -133,51 +119,24 @@ async function handleExpenseSubmit(e) {
 async function handleStatementSubmit(e) {
     e.preventDefault();
     const btn = document.getElementById('stmtSubmitBtn');
-    const method = document.querySelector('input[name="delivery_method"]:checked').value;
-    
     const payload = {
-        from_date: document.getElementById('stmtFrom').value,
-        to_date: document.getElementById('stmtTo').value,
-        password: document.getElementById('stmtPassword').value,
-        method: method,
-        download: method === 'download'
+        email: document.getElementById('stmtEmail').value.trim(),
+        start_date: document.getElementById('stmtFrom').value,
+        end_date: document.getElementById('stmtTo').value,
     };
-
-    if (method === 'email') {
-        payload.email = document.getElementById('stmtEmail').value.trim();
-    }
+    if (!payload.email || !payload.start_date || !payload.end_date) return alert('Email and both dates are required.');
 
     try {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
 
-        const res = await apiFetch('/api/expenses/send-statement/', {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        });
-        console.log(JSON.stringify(payload));
-
-        if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw errData;
-        }
-
-        if (method === 'download' && res.headers.get('Content-Type') === 'application/pdf') {
-            const blob = await res.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Expense_Statement_${payload.from_date}_to_${payload.to_date}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(url);
-        } else {
-            alert('Statement sent successfully to the provided email.');
-        }
+        const status = document.getElementById('expenseStatementStatus');
+        const taskId = await queueStatement('/api/expenses/send-all-expenses-statement/', payload);
+        status.textContent = 'Queued. Generating PDF…';
+        await waitForStatement(taskId, (task) => status.textContent = task.status || 'Generating PDF…');
+        status.textContent = 'Statement emailed successfully.';
 
         e.target.reset();
-        document.getElementById('emailGroup').hidden = true;
         toggleModal('statementModal', false);
     } catch (err) {
         alert('Failed to generate statement: ' + (err.password || err.detail || 'Invalid request.'));

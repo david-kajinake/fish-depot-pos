@@ -37,6 +37,8 @@ class User(AbstractUser):
     can_edit_suppliers_info = models.BooleanField(default=False)
     can_generate_statements = models.BooleanField(default=False)
 
+    
+
 
 
     def __str__( self ):

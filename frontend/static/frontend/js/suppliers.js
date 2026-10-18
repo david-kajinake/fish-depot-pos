@@ -1,4 +1,5 @@
 import { apiFetch } from './session.js';
+import { queueStatement, statementPayload, waitForStatement } from './utils/statementTasks.js';
 
 let allSuppliers = [];
 let supplierChart = null;
@@ -17,6 +18,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Form Submission
     document.getElementById('supplierForm').addEventListener('submit', handleAddSupplier);
+    document.getElementById('openAllSuppliersStatement').onclick = () => { const modal = document.getElementById('allSuppliersStatementModal'); modal.hidden = false; modal.style.display = 'flex'; };
+    document.querySelectorAll('[data-close-statement]').forEach((button) => button.onclick = () => { const modal = document.getElementById(button.dataset.closeStatement); modal.hidden = true; modal.style.display = 'none'; });
+    document.getElementById('allSuppliersStatementForm').onsubmit = (event) => submitStatement(event, '/api/suppliers/send-all-suppliers-statement/', 'allSuppliersStatementStatus');
 
     // View Toggles
     document.querySelectorAll('.view-btn').forEach(btn => {
@@ -86,6 +90,17 @@ async function loadSuppliersData() {
         console.error("Failed to load suppliers:", err);
         document.getElementById('suppliersTableBody').innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error loading suppliers</td></tr>`;
     }
+}
+
+async function submitStatement(event, endpoint, statusId) {
+    event.preventDefault();
+    const status = document.getElementById(statusId);
+    try {
+        status.textContent = 'Queuing statement…';
+        const taskId = await queueStatement(endpoint, statementPayload(event.currentTarget));
+        await waitForStatement(taskId, (task) => status.textContent = task.status || 'Generating PDF…');
+        status.textContent = 'Statement emailed successfully.';
+    } catch (error) { status.textContent = error.detail || error.message || 'Could not queue statement.'; }
 }
 
 // Global scope redirect function attached to dynamic rows/cards

@@ -9,7 +9,7 @@
 <section class="sales-page">
   <header class="sales-page-header">
     <div><p class="eyebrow">Daily sales ledger</p><h1>Sales overview</h1><p>Track today’s sales, review previous days, and record a new transaction.</p></div>
-    <button id="toggleSaleForm" class="sales-primary-button" type="button"><i class="fa-solid fa-plus"></i> Record sale</button>
+    <div class="sales-header-actions"><button id="openSalesStatement" class="sales-secondary-button" type="button"><i class="fa-solid fa-file-pdf"></i> Send statement</button><button id="toggleSaleForm" class="sales-primary-button" type="button"><i class="fa-solid fa-plus"></i> Record sale</button></div>
   </header>
   <section class="today-panel">
     <div class="section-heading"><div><p class="eyebrow">Current day</p><h2>Today’s sales</h2></div><span id="todayDate" class="date-chip">Loading…</span></div>
@@ -25,5 +25,6 @@
   <section class="history-panel"><div class="section-heading"><div><p class="eyebrow">Previous days</p><h2>Sales history</h2></div><span>Grouped by business day</span></div><div id="pastSalesGroups" class="sales-history-scroll"><p class="table-message">Loading past sales…</p></div></section>
   <section class="sales-chart-grid"><article class="sales-chart-card"><div class="chart-heading"><div><p class="eyebrow">Comparison</p><h2>Sales over time</h2></div><div class="chart-tabs"><button class="chart-tab active" data-period="week" type="button">Weekly</button><button class="chart-tab" data-period="month" type="button">Monthly</button></div></div><div class="chart-canvas"><canvas id="salesTrendChart"></canvas></div></article><article class="sales-chart-card"><div class="chart-heading"><div><p class="eyebrow">Demand by size</p><h2>Fish-size sales</h2></div></div><div class="chart-canvas"><canvas id="sizeSalesChart"></canvas></div></article></section>
 </section>
+<div id="salesStatementModal" class="statement-modal" hidden><div class="statement-card"><button type="button" class="statement-close" data-close-statement="salesStatementModal">&times;</button><h2>Send sales statement</h2><form id="salesStatementForm" class="statement-form"><label>Destination email <input name="email" type="email" required></label><div class="statement-date-grid"><label>From date <input name="start_date" type="date"></label><label>To date <input name="end_date" type="date"></label></div><p>Leave both dates blank for all-time sales.</p><button class="sales-primary-button" type="submit">Queue statement</button><output id="salesStatementStatus"></output></form></div></div>
 {% endblock %}
 {% block extra_js %}<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script type="module" src="{% static 'frontend/js/sales.js' %}?v={{latest}}"></script>{% endblock %}

@@ -144,6 +144,7 @@ td {
 
 .text-right { text-align: right !important; }
 .empty-state { text-align: center; color: var(--muted); padding: 2rem; }
+.expense-row{cursor:pointer}.expense-row:hover{background:var(--ice)}output{color:var(--muted);font-size:.82rem}
 
 /* Charts */
 .charts-container {
