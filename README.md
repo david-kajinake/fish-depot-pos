@@ -72,5 +72,5 @@ Spin up the entire stack (Django, Redis, and Celery worker) simultaneously:
 
 1. Clone the repository:
    ```bash
-   git clone [https://github.com/david-kajinake/fish-depot-pos.git](https://github.com/david-kajinake/fish-depot-pos.git)
+   git clone https://github.com/david-kajinake/fish-depot-pos.git
    cd fish-depot-pos
