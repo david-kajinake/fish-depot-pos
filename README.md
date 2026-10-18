@@ -74,3 +74,8 @@ Spin up the entire stack (Django, Redis, and Celery worker) simultaneously:
    ```bash
    git clone https://github.com/david-kajinake/fish-depot-pos.git
    cd fish-depot-pos
+
+2. Create a separate branch with your prefered name
+3. Add your modifications
+4. Commit and push to the branch you created
+5. Create a pull request 
