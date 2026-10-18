@@ -4,13 +4,17 @@ from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Customer, Day, FishSize, OutsideFrying, User
+from .models import Customer, Day, Expense, FishSize, OutsideFrying, Supplier, SupplyInvoice, User
 from .utils.generate_statement import StatementGenerator
 
 
 class CustomerDebtFlowTests(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username='cashier', password='secret-pass', name='Cashier')
+        self.user = User.objects.create_user(
+            username='cashier', password='secret-pass', name='Cashier',
+            can_generate_statements=True,
+            can_record_customer_balance_debt_payment=True,
+        )
         self.client = APIClient()
         self.client.force_authenticate(self.user)
 
@@ -79,6 +83,21 @@ class CustomerDebtFlowTests(TestCase):
     def test_statement_generator_returns_a_pdf(self):
         statement = StatementGenerator().generate_balance_history(Customer.objects.create(name='Amina'))
         self.assertTrue(statement.read().startswith(b'%PDF'))
+
+    def test_operational_statement_generators_return_pdfs(self):
+        day = Day.objects.create(date='2026-10-19')
+        supplier = Supplier.objects.create(name='Lake Supplier')
+        SupplyInvoice.objects.create(day=day, supplier=supplier, total_invoice_cost=Decimal('200.00'), total_weight=Decimal('10.00'), amount_paid_to_supplier=Decimal('100.00'))
+        Expense.objects.create(day=day, item_name='Ice', amount=Decimal('50.00'))
+        generator = StatementGenerator()
+        statements = [
+            generator.generate_sales_statement(),
+            generator.generate_supplier_stock_supply_statement(supplier),
+            generator.generate_stock_supply_statement(),
+            generator.generate_single_expenses_statement('Ice'),
+            generator.generate_all_expenses_statement(),
+        ]
+        self.assertTrue(all(statement.read().startswith(b'%PDF') for statement in statements))
 
     def test_jwt_login_identity_and_logout_are_bound_to_the_same_user(self):
         response = APIClient().post('/api/auth/login/', {'username': 'cashier', 'password': 'secret-pass'}, format='json')

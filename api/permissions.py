@@ -17,7 +17,7 @@ class canRecordSale(BasePermission):
 class CanRecordStockSupply(BasePermission):
     def has_permission(self, request, view):
         is_admin_or_superuser = request.user.role == 'ADMIN' or request.user.role == 'MANAGER' or request.user.is_superuser
-        has_been_granted_permission = request.user and request.user.can_record_supply
+        has_been_granted_permission = request.user and request.user.can_record_stock_supply
         return is_admin_or_superuser or has_been_granted_permission
 
 class CanRecordExpenses(BasePermission):
@@ -29,7 +29,7 @@ class CanRecordExpenses(BasePermission):
 class CanRecordCustomerBalanceDebt(BasePermission):
     def has_permission(self, request, view):
         is_admin_or_superuser = request.user.role == 'ADMIN' or request.user.role == 'MANAGER' or request.user.is_superuser
-        has_been_granted_permission = request.user and request.user.can_record_customer_balance_debt
+        has_been_granted_permission = request.user and request.user.can_record_customer_balance_debt_payment
         return is_admin_or_superuser or has_been_granted_permission
 
 class CanSendMessagesToCustomers(BasePermission):

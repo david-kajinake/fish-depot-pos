@@ -15,7 +15,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-from api.models import BalancePayment, Sale
+from api.models import BalancePayment, Expense, Sale, SupplyInvoice
 
 
 class StatementGenerator:
@@ -312,6 +312,122 @@ class StatementGenerator:
         buffer.seek(0)
         return buffer
 
-    
 
-    
+    def generate_sales_statement(self, start_date= None, end_date= None ):
+        """This statement applies to all sales that were made during the specified
+           time range. absolutely all of them are returned if no range was specified.
+           it does not apply to a single or specific group of customers
+        """
+        sales = self._filter_timestamp(Sale.objects.all().order_by('timestamp'), start_date, end_date)
+        rows = [[sale.timestamp, f'#{sale.id[:8]}', sale.customer.name if sale.customer else 'Walk-in', sale.total_amount, sale.amount_paid_now] for sale in sales]
+        return self._generate_tabular_statement(
+            'Sales statement', self._range_label(start_date, end_date),
+            ['Date', 'Reference', 'Customer', 'Sale amount', 'Paid now'], rows,
+            ['Sales total', self._money(sum((Decimal(sale.total_amount) for sale in sales), Decimal('0.00')))],
+        )
+
+
+
+    def generate_supplier_stock_supply_statement(self, supplier_object, start_date= None, end_date= None):
+        """
+        This statement applies to a single specific supplier. 
+        it returns all stock supplies associated with a supplier in a specified time range.
+        absolutely all supplies are returned if no time range has been defined
+        """
+        invoices = self._filter_timestamp(supplier_object.invoices.all().order_by('timestamp'), start_date, end_date)
+        rows = [[invoice.timestamp, f'#{invoice.id[:8]}', invoice.total_weight, invoice.total_invoice_cost, invoice.amount_paid_to_supplier] for invoice in invoices]
+        return self._generate_tabular_statement(
+            f'Supplier stock supply statement - {supplier_object.name}', self._range_label(start_date, end_date),
+            ['Date', 'Invoice', 'Weight (kg)', 'Invoice cost', 'Paid'], rows,
+            ['Supply cost total', self._money(sum((Decimal(invoice.total_invoice_cost) for invoice in invoices), Decimal('0.00')))],
+        )
+
+
+
+    def generate_stock_supply_statement(self, start_date= None, end_date= None):
+        """
+        This statement applies to all fish stocks that were supplied in a specified time range.
+        absolutely all supplies are returned if no time range was defined.
+        it does not apply to a single or specific group of suppliers. it applies to all stock supplies
+        """
+        invoices = self._filter_timestamp(SupplyInvoice.objects.select_related('supplier').all().order_by('timestamp'), start_date, end_date)
+        rows = [[invoice.timestamp, f'#{invoice.id[:8]}', invoice.supplier.name if invoice.supplier else 'Unknown', invoice.total_weight, invoice.total_invoice_cost] for invoice in invoices]
+        return self._generate_tabular_statement(
+            'All stock supplies statement', self._range_label(start_date, end_date),
+            ['Date', 'Invoice', 'Supplier', 'Weight (kg)', 'Invoice cost'], rows,
+            ['Supply cost total', self._money(sum((Decimal(invoice.total_invoice_cost) for invoice in invoices), Decimal('0.00')))],
+        )
+
+
+    def generate_single_expenses_statement(self, expense_name, start_date= None, end_date= None):
+        """
+        This statement applies to a single particular expense ( soap, water, electricity, gas,....  ) and shows how much it was spent on in a specified time range.
+        if no time range is specified then it should return all-time history for the given expense name
+        """
+        expenses = Expense.objects.filter(item_name__iexact=expense_name).select_related('day').order_by('day__date')
+        expenses = self._filter_day(expenses, start_date, end_date)
+        rows = [[expense.day.date, expense.item_name, expense.amount] for expense in expenses]
+        return self._generate_tabular_statement(
+            f'Expense statement - {expense_name}', self._range_label(start_date, end_date),
+            ['Date', 'Expense', 'Amount'], rows,
+            ['Expense total', self._money(sum((Decimal(expense.amount) for expense in expenses), Decimal('0.00')))],
+        )
+
+
+    def generate_all_expenses_statement(self, start_date= None, end_date= None):
+        """
+        This statement applies to all expenses with how much they were spent on in aspecified time range.
+        if no time range is given then it should return all expenses regardless.
+        it does not apply to a single or specific group of expenses.
+        """
+        expenses = self._filter_day(Expense.objects.select_related('day').all().order_by('day__date'), start_date, end_date)
+        rows = [[expense.day.date, expense.item_name, expense.amount] for expense in expenses]
+        return self._generate_tabular_statement(
+            'All expenses statement', self._range_label(start_date, end_date),
+            ['Date', 'Expense', 'Amount'], rows,
+            ['Expense total', self._money(sum((Decimal(expense.amount) for expense in expenses), Decimal('0.00')))],
+        )
+
+    def _generate_tabular_statement(self, title, subtitle, headers, rows, total):
+        """Create a consistent PDF for operational (non-customer) statements."""
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=self.margin, rightMargin=self.margin, topMargin=self.margin, bottomMargin=self.margin)
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle('statement-title', parent=styles['Title'], textColor=colors.white, fontSize=16, leading=18)
+        sub_style = ParagraphStyle('statement-subtitle', parent=styles['Normal'], textColor=colors.white, fontSize=9)
+        banner = Table([[Paragraph('FRESH VICTORIA FISH', title_style)], [Paragraph(f'{title}<br/>{subtitle}', sub_style)]], colWidths=[self.page_width - 2 * self.margin])
+        banner.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#00509e')), ('LEFTPADDING', (0, 0), (-1, -1), 12), ('TOPPADDING', (0, 0), (-1, -1), 9), ('BOTTOMPADDING', (0, 0), (-1, -1), 9)]))
+        data = [headers]
+        for row in rows:
+            data.append([self._display_date(value) if index == 0 else self._money(value) if isinstance(value, Decimal) and index >= len(row) - 2 else str(value) for index, value in enumerate(row)])
+        if not rows:
+            data.append(['No entries found for this period'] + [''] * (len(headers) - 1))
+        table = Table(data, repeatRows=1, colWidths=[(self.page_width - 2 * self.margin) / len(headers)] * len(headers))
+        table.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#edf8ff')), ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#00509e')), ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'), ('FONTSIZE', (0, 0), (-1, -1), 8), ('GRID', (0, 0), (-1, -1), .35, colors.HexColor('#d8e8f2')), ('TOPPADDING', (0, 0), (-1, -1), 6), ('BOTTOMPADDING', (0, 0), (-1, -1), 6)]))
+        doc.build([banner, Spacer(1, 14), table, Spacer(1, 10), Paragraph(f'<b>{total[0]}:</b> {total[1]}', styles['BodyText'])])
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
+    def _display_date(value):
+        return value.astimezone().strftime('%d %b %Y %H:%M') if hasattr(value, 'astimezone') else value.strftime('%d %b %Y')
+
+    @staticmethod
+    def _range_label(start_date, end_date):
+        return f'Period: {start_date} to {end_date}' if start_date and end_date else 'All-time history'
+
+    @staticmethod
+    def _filter_timestamp(queryset, start_date, end_date):
+        if start_date:
+            queryset = queryset.filter(timestamp__date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(timestamp__date__lte=end_date)
+        return queryset
+
+    @staticmethod
+    def _filter_day(queryset, start_date, end_date):
+        if start_date:
+            queryset = queryset.filter(day__date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(day__date__lte=end_date)
+        return queryset

@@ -254,7 +254,7 @@ class LoginAttempt(models.Model):
 class SystemSetting(models.Model):
     """Singleton model for global system settings (Admin only)."""
     # Automation I: Auto Receipt
-    receipt_autoh_send = models.BooleanField(default=False)
+    receipt_auto_send = models.BooleanField(default=False)
     receipt_target = models.CharField(
         max_length=20, 
         choices=[('all', 'All Customers'), ('selected', 'Selected Customers')],

@@ -32,6 +32,19 @@ from .utils.generate_statement import StatementGenerator
 from .models import BalancePayment
 from .serializers import BalancePaymentSerializer
 
+
+def queue_statement(task, request, **kwargs):
+    """Validate a common statement request and return its Celery task response."""
+    email = str(request.data.get('email', '')).strip()
+    if not email:
+        return None, Response({'email': 'Enter a destination email address.'}, status=status.HTTP_400_BAD_REQUEST)
+    start_date = request.data.get('start_date') or None
+    end_date = request.data.get('end_date') or None
+    if bool(start_date) != bool(end_date):
+        return None, Response({'date_range': 'Provide both start_date and end_date, or neither.'}, status=status.HTTP_400_BAD_REQUEST)
+    task_result = task.delay(recipient_email=email, start_date=start_date, end_date=end_date, **kwargs)
+    return task_result, None
+
 # Create your views here.
 
 class TaskStatusView(APIView):
@@ -268,6 +281,23 @@ class SupplierViewsSet(viewsets.ModelViewSet):
         }
         return Response( data , status= status.HTTP_200_OK ) 
 
+    @action( detail= True, methods=['post'], url_path= 'send-single-supplier-statement', permission_classes= [Custom_permissions.CanGenerateStatements] )
+    def send_single_supplier_statement(self, request, pk= None):
+        """Sends a single particular supplier's statement"""
+        task_result, error = queue_statement(tasks.generate_and_email_supplier_statement, request, supplier_id=self.get_object().id)
+        if error:
+            return error
+        return Response({'detail': 'Supplier statement queued.', 'task_id': task_result.id}, status=status.HTTP_202_ACCEPTED)
+
+
+    @action( detail= False, methods= ['post'], url_path= 'send-all-suppliers-statement', permission_classes= [Custom_permissions.CanGenerateStatements] )
+    def send_all_suppliers_statement(self, request, pk= None):
+        """sends a statement for all stock supplies"""
+        task_result, error = queue_statement(tasks.generate_and_email_all_suppliers_statement, request)
+        if error:
+            return error
+        return Response({'detail': 'All suppliers statement queued.', 'task_id': task_result.id}, status=status.HTTP_202_ACCEPTED)
+
 
 
 
@@ -294,6 +324,13 @@ class SaleViewSet(viewsets.ModelViewSet):
        today_sales = Sale.objects.filter( day= today )
        serializer= self.get_serializer(today_sales, many= True)
        return Response( serializer.data , status= status.HTTP_200_OK)
+
+   @action(detail=False, methods=['post'], url_path='send-sales-statement', permission_classes=[Custom_permissions.CanGenerateStatements])
+   def send_sales_statement(self, request, pk=None):
+       task_result, error = queue_statement(tasks.generate_and_email_sales_statement, request)
+       if error:
+           return error
+       return Response({'detail': 'Sales statement queued.', 'task_id': task_result.id}, status=status.HTTP_202_ACCEPTED)
 
    
 
@@ -370,15 +407,20 @@ class ExpenseViewSet(viewsets.ModelViewSet):
         return Response( serializer.data, status= status.HTTP_200_OK )
 
 
-    @action(detail= False, methods= ['get'], url_path= 'send-statement')
-    def send_statement(self, request, pk= None):
-        data= request.data
-        from_date = data.get('from_date')
-        to_date = data.get('to_date')
-        password = data.get('password')
-        method = data.get('method')
-        must_download = data.get('download')
-        destination_email= data.get('email')
+    @action(detail=True, methods=['post'], url_path='send-single-expenses-statement', permission_classes=[Custom_permissions.CanGenerateStatements])
+    def send_single_expenses_statement(self, request, pk=None):
+        expense = self.get_object()
+        task_result, error = queue_statement(tasks.generate_and_email_single_expense_statement, request, expense_name=expense.item_name)
+        if error:
+            return error
+        return Response({'detail': 'Expense statement queued.', 'task_id': task_result.id}, status=status.HTTP_202_ACCEPTED)
+
+    @action(detail=False, methods=['post'], url_path='send-all-expenses-statement', permission_classes=[Custom_permissions.CanGenerateStatements])
+    def send_all_expenses_statement(self, request, pk=None):
+        task_result, error = queue_statement(tasks.generate_and_email_all_expenses_statement, request)
+        if error:
+            return error
+        return Response({'detail': 'All expenses statement queued.', 'task_id': task_result.id}, status=status.HTTP_202_ACCEPTED)
 
 
 class SystemSettingView(APIView):
