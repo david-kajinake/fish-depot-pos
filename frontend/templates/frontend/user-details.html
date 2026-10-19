@@ -1,0 +1,58 @@
+{% extends "frontend/base.html" %}
+{% load static %}
+
+{% block title %}Operator Details | Fresh Victoria Fish{% endblock %}
+{% block page_title %}Operator Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'frontend/css/user-details.css' %}?v={{latest}}">
+{% endblock %}
+
+{% block content %}
+<section class="user-details-page">
+    <a class="back-link" href="/settings/"><i class="fa-solid fa-arrow-left"></i> Back to settings</a>
+
+    <header class="operator-header">
+        <div class="operator-avatar" id="operatorAvatar">?</div>
+        <div>
+            <p class="eyebrow">Registered operator</p>
+            <h1 id="operatorHeading">Loading operator…</h1>
+            <p id="operatorStatus" class="operator-status">Loading status…</p>
+        </div>
+        <button id="toggleOperatorForm" class="edit-user-button" type="button"><i class="fa-solid fa-pen-to-square"></i> Edit user's info</button>
+    </header>
+
+    <form id="operatorForm" class="operator-form" hidden>
+        <section class="detail-card">
+            <div class="section-heading"><div><h2>Account details</h2><p>Update the operator’s account and contact information.</p></div></div>
+            <div class="form-grid">
+                <label>Username <input id="username" name="username" required autocomplete="username"></label>
+                <label>Full name <input id="name" name="name" required autocomplete="name"></label>
+                <label>Email <input id="email" name="email" type="email" autocomplete="email"></label>
+                <label>Phone <input id="phone" name="phone" type="tel" autocomplete="tel"></label>
+                <label>Role <input id="role" readonly aria-readonly="true"></label>
+                <label>New password <input id="password" name="password" type="password" minlength="8" autocomplete="new-password" placeholder="Leave blank to keep current password"></label>
+            </div>
+        </section>
+
+        <section class="detail-card">
+            <div class="section-heading"><div><h2>Operational permissions</h2><p>Choose the activities this operator may perform.</p></div></div>
+            <div id="permissions" class="permission-grid"></div>
+        </section>
+
+        <section class="detail-card account-state-card">
+            <div><h2>Account status</h2><p>Disabled operators cannot sign in or use any existing access token. Their records remain intact.</p></div>
+            <label class="disable-toggle"><input id="is_disabled" name="is_disabled" type="checkbox"><span>Disable this operator</span></label>
+        </section>
+
+        <div class="form-actions">
+            <output id="formStatus" aria-live="polite"></output>
+            <button class="save-button" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save changes</button>
+        </div>
+    </form>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script type="module" src="{% static 'frontend/js/user-details.js' %}?v={{latest}}"></script>
+{% endblock %}

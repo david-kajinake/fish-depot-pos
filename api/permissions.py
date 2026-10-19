@@ -1,4 +1,5 @@
 from rest_framework.permissions import BasePermission
+from .models import User
 """
 Admins and Super users can override these permissions. ( they are granted all permissions )
 """
@@ -55,3 +56,13 @@ class CanGenerateStatements(BasePermission):
         is_admin_or_superuser = request.user.role == 'ADMIN' or request.user.role == 'MANAGER' or request.user.is_superuser
         has_been_granted_permission = request.user and request.user.can_generate_statements
         return is_admin_or_superuser or has_been_granted_permission
+
+
+class CanManageUsers(BasePermission):
+    """Only shop administrators and managers may manage operator accounts."""
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user and user.is_authenticated and
+            (user.is_superuser or user.is_staff or user.role in (User.ADMIN, User.MANAGER))
+        )

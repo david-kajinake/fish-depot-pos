@@ -2,6 +2,7 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework import permissions, viewsets , status
 from rest_framework.response import Response
+from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework.decorators import action #For custom routes
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -80,6 +81,8 @@ class UnifiedLoginView(TokenObtainPairView):
         serializer= self.get_serializer(data= request.data)
         serializer.is_valid(raise_exception = True)
         user = serializer.user
+        if user.is_disabled:
+            raise AuthenticationFailed('This user account has been disabled.')
         user.apply_login_timestamp()
         user.save(update_fields=['last_login'])
         return Response({
@@ -111,9 +114,20 @@ class CurrentUserView(APIView):
         return Response(UserSerializer(request.user).data)
 
 class UsersViewset(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [Custom_permissions.CanManageUsers]
     serializer_class = UserSerializer
     queryset= User.objects.all()
+    http_method_names = ['get', 'post', 'put', 'patch', 'head', 'options']
+
+    def perform_update(self, serializer):
+        target = self.get_object()
+        if target == self.request.user and self.request.data.get('is_disabled') in (True, 'true', 'True', '1', 1):
+            raise PermissionDenied('You cannot disable your own account.')
+        if target.is_superuser and not self.request.user.is_superuser:
+            raise PermissionDenied('Only a superuser can modify another superuser.')
+        if self.request.user.role == User.MANAGER and target.role != User.CASHIER:
+            raise PermissionDenied('Managers can only manage cashier accounts.')
+        serializer.save()
 
 class CustomerViewSet( viewsets.ModelViewSet ): 
     """
@@ -405,6 +419,13 @@ class ExpenseViewSet(viewsets.ModelViewSet):
         today_expenses = Expense.objects.filter( day= today )
         serializer= ExpenseSerializer( today_expenses, many= True )
         return Response( serializer.data, status= status.HTTP_200_OK )
+
+    @action(detail=True, methods=['get'], url_path='history')
+    def history(self, request, pk=None):
+        """Return every recorded occurrence of the selected expense item."""
+        expense = self.get_object()
+        history = Expense.objects.filter(item_name__iexact=expense.item_name).select_related('day').order_by('-day__date', '-id')
+        return Response(ExpenseSerializer(history, many=True).data)
 
 
     @action(detail=True, methods=['post'], url_path='send-single-expenses-statement', permission_classes=[Custom_permissions.CanGenerateStatements])

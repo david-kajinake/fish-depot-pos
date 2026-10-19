@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function configureRoleUi(user) {
-    const isAdmin = user.role === 'ADMIN' || user.is_staff || user.is_superuser;
+    const isAdmin = ['ADMIN', 'MANAGER'].includes(user.role) || user.is_staff || user.is_superuser;
     
     // Automation tab elements
     const automationButton = document.getElementById('automationTabButton') || document.querySelector('[data-target="automation-tab"]')?.parentElement;
@@ -52,6 +52,7 @@ function configureRoleUi(user) {
     if (isAdmin && userMgmtButton && userMgmtPane) {
         userMgmtButton.hidden = false;
         userMgmtPane.hidden = false;
+        bindCreateUserForm();
         loadUsersAndPermissions();
     }
 
@@ -145,11 +146,12 @@ function renderUsersTable() {
             <td><strong>${escapeHtml(user.username)}</strong></td>
             <td>${escapeHtml(user.email || '—')}</td>
             <td><span class="role-badge">${user.is_superuser ? 'Superuser' : user.is_staff ? 'Staff' : 'Operator'}</span></td>
-            <td class="text-right">
-                <button type="button" class="btn-secondary btn-sm" onclick="alert('User details view coming soon.')">View</button>
-            </td>
+            <td class="text-right"><button type="button" class="btn-secondary btn-sm js-view-user">View</button></td>
         </tr>
     `).join('');
+    tbody.querySelectorAll('tr[data-user-id]').forEach(row => {
+        row.addEventListener('click', () => openUserDetails(row.dataset.userId));
+    });
 }
 
 function renderUsersCards() {
@@ -170,6 +172,13 @@ function renderUsersCards() {
             <p class="text-muted text-sm">${escapeHtml(user.email || 'No email provided')}</p>
         </div>
     `).join('');
+    container.querySelectorAll('[data-user-id]').forEach(card => {
+        card.addEventListener('click', () => openUserDetails(card.dataset.userId));
+    });
+}
+
+function openUserDetails(userId) {
+    window.location.assign(`/settings/users/${encodeURIComponent(userId)}/`);
 }
 
 function bindViewToggles() {
@@ -185,6 +194,8 @@ function bindViewToggles() {
         cardsBtn.classList.remove('active-view');
         tableContainer.hidden = false;
         cardsContainer.hidden = true;
+        tableContainer.classList.remove('hidden');
+        cardsContainer.classList.add('hidden');
     };
 
     cardsBtn.onclick = () => {
@@ -192,7 +203,46 @@ function bindViewToggles() {
         tableBtn.classList.remove('active-view');
         tableContainer.hidden = true;
         cardsContainer.hidden = false;
+        tableContainer.classList.add('hidden');
+        cardsContainer.classList.remove('hidden');
     };
+}
+
+function bindCreateUserForm() {
+    const toggle = document.getElementById('toggleCreateUserBtn');
+    const form = document.getElementById('createUserForm');
+    if (!toggle || !form || toggle.dataset.bound) return;
+    toggle.dataset.bound = 'true';
+    toggle.addEventListener('click', () => {
+        form.hidden = !form.hidden;
+        toggle.innerHTML = form.hidden
+            ? '<i class="fa-solid fa-user-plus"></i> Create user'
+            : '<i class="fa-solid fa-xmark"></i> Cancel';
+    });
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const status = document.getElementById('createUserStatus');
+        const data = new FormData(form);
+        const payload = Object.fromEntries(data.entries());
+        permissionKeys.forEach(({ key }) => { payload[key] = form.elements[key].checked; });
+        const submit = form.querySelector('button[type="submit"]');
+        submit.disabled = true;
+        status.textContent = 'Creating user…';
+        try {
+            const response = await apiFetch('/api/users/', { method: 'POST', body: JSON.stringify(payload) });
+            const result = await response.json();
+            if (!response.ok) throw new Error(Object.values(result).flat().join(' ') || 'Unable to create user.');
+            form.reset();
+            form.hidden = true;
+            toggle.innerHTML = '<i class="fa-solid fa-user-plus"></i> Create user';
+            status.textContent = '';
+            await loadUsersAndPermissions();
+        } catch (error) {
+            status.textContent = error.message;
+        } finally {
+            submit.disabled = false;
+        }
+    });
 }
 
 function renderPermissionsMatrix() {
@@ -534,8 +584,6 @@ async function saveProfile(e) {
         btn.disabled = false;
     }
 }
-usersCardsContainer
-
 function escapeHtml(str) {
     return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }

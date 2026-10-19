@@ -100,7 +100,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'api.authentication.ActiveUserJWTAuthentication',
     ],
     # Optional: Enforce auth globally so all API routes require a token
     'DEFAULT_PERMISSION_CLASSES': [

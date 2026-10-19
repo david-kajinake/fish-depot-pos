@@ -33,6 +33,9 @@ def customer_details(request, customer_id):
 def settings(request):
     return render(request, 'frontend/settings.html')
 
+def user_details(request, user_id):
+    return render(request, 'frontend/user-details.html')
+
 def suppliers(request):
     return render(request, 'frontend/suppliers.html')
 

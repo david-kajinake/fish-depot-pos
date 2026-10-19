@@ -340,6 +340,18 @@ input:checked + .slider:before { transform: translateX(22px); }
     gap: 1rem;
 }
 
+#usersTableContainer[hidden],
+#usersCardsContainer[hidden] {
+    display: none !important;
+}
+
+#createUserForm[hidden] { display: none !important; }
+.create-user-permissions { border:1px solid var(--line); border-radius:8px; display:grid; gap:.7rem; grid-template-columns:repeat(3, minmax(0, 1fr)); padding:1rem; }
+.create-user-permissions legend { color:var(--ink); font-weight:700; padding:0 .35rem; }
+.create-user-permissions label { color:var(--ink); font-size:.85rem; }
+.create-user-permissions input { accent-color:var(--ocean-blue); }
+@media (max-width: 720px) { .create-user-permissions { grid-template-columns:1fr; } }
+
 .user-card-item {
     background: #fafcff;
     border: 1px solid var(--line);

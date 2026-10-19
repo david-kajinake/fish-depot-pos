@@ -316,10 +316,35 @@
                     </div>
                 </div>
 
+                <div class="setting-card mt-3">
+                    <div class="setting-header">
+                        <div><h3>Create a new user</h3><p>Add an operator account and set their starting access.</p></div>
+                        <button type="button" id="toggleCreateUserBtn" class="btn-primary btn-sm"><i class="fa-solid fa-user-plus"></i> Create user</button>
+                    </div>
+                    <form id="createUserForm" class="custom-form mt-3" hidden>
+                        <div class="form-row">
+                            <div class="form-group"><label>Username <input name="username" required autocomplete="username"></label></div>
+                            <div class="form-group"><label>Full name <input name="name" required autocomplete="name"></label></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Email <input name="email" type="email" autocomplete="email"></label></div>
+                            <div class="form-group"><label>Phone <input name="phone" type="tel" autocomplete="tel"></label></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Role <select name="role"><option value="CASHIER">Cashier</option><option value="MANAGER">Manager</option><option value="ADMIN">Admin</option></select></label></div>
+                            <div class="form-group"><label>Temporary password <input name="password" type="password" minlength="8" required autocomplete="new-password"></label></div>
+                        </div>
+                        <fieldset class="create-user-permissions"><legend>Starting permissions</legend>
+                            <label><input type="checkbox" name="can_call_it_a_day"> Call it a day</label><label><input type="checkbox" name="can_record_sale" checked> Record sales</label><label><input type="checkbox" name="can_record_stock_supply"> Record stock supplies</label><label><input type="checkbox" name="can_record_expenses"> Record expenses</label><label><input type="checkbox" name="can_record_customer_balance_debt_payment"> Record balance payments</label><label><input type="checkbox" name="can_send_messages_to_customers"> Send customer messages</label><label><input type="checkbox" name="can_edit_customers_info"> Edit customer details</label><label><input type="checkbox" name="can_edit_suppliers_info"> Edit supplier details</label><label><input type="checkbox" name="can_generate_statements"> Generate statements</label>
+                        </fieldset>
+                        <div class="form-actions-bar"><output id="createUserStatus"></output><button type="submit" class="btn-primary">Create user</button></div>
+                    </form>
+                </div>
+
                 <!-- USERS LIST SECTION -->
                 <div class="setting-card mt-3">
                     <h3>Registered Operators</h3>
-                    <p class="text-muted text-sm">Click any user row or card to view detailed activity (coming soon).</p>
+                    <p class="text-muted text-sm">Click any user row or card to manage that operator.</p>
                     
                     <!-- Table Format Container -->
                     <div id="usersTableContainer" class="table-scroll-wrap mt-3">

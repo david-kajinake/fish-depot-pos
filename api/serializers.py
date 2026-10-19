@@ -10,6 +10,8 @@ from .models import ( User, Customer, Supplier,
                     )
 
 class UserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=False, allow_blank=False, min_length=8)
+
     class Meta:
         model = User
         fields = [ "id" , "username" , "name" , 
@@ -18,7 +20,34 @@ class UserSerializer(serializers.ModelSerializer):
                   'can_record_sale', 'can_record_stock_supply',
                   'can_record_expenses', 'can_record_customer_balance_debt_payment',
                   'can_send_messages_to_customers', 'can_edit_customers_info',
-                  'can_edit_suppliers_info', 'can_generate_statements' ]
+                  'can_edit_suppliers_info', 'can_generate_statements',
+                  'is_disabled', 'password' ]
+        read_only_fields = ['id', 'is_staff', 'is_superuser']
+
+    def validate_role(self, value):
+        request = self.context.get('request')
+        if request and not request.user.is_superuser and request.user.role == User.MANAGER and value != User.CASHIER:
+            raise serializers.ValidationError('Managers can only create or assign cashier accounts.')
+        return value
+
+    def create(self, validated_data):
+        password = validated_data.pop('password', None)
+        user = User(**validated_data)
+        if password:
+            user.set_password(password)
+        else:
+            user.set_unusable_password()
+        user.save()
+        return user
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        if password:
+            instance.set_password(password)
+        instance.save()
+        return instance
 
 class CustomerSerializer( serializers.ModelSerializer ):
     active_60_days = serializers.BooleanField(read_only=True)

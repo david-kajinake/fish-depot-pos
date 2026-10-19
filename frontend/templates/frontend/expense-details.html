@@ -1,4 +1,19 @@
-{% extends 'frontend/base.html' %}{% load static %}
+{% extends 'frontend/base.html' %}
+{% load static %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'frontend/css/expenses.css' %}?v={{latest}}">{% endblock %}
 {% block page_title %}Expense Details{% endblock %}
-{% block content %}<section class="expenses-page"><a href="/expenses/" class="btn-secondary">← Expenses</a><article class="card"><div class="card-header"><h2 id="expenseName">Loading expense…</h2><p id="expenseMeta"></p></div><div class="card-header"><h2 id="expenseAmount">KES 0.00</h2><button id="openExpenseStatement" class="btn-primary">Send expense statement</button></div></article></section><div id="expenseStatementModal" class="modal-overlay" hidden><div class="modal-card"><button class="modal-close" data-close-modal="expenseStatementModal">&times;</button><h2>Send expense statement</h2><form id="singleExpenseStatementForm" class="custom-form"><div class="form-group"><label>Destination email <input name="email" type="email" required></label></div><div class="form-row"><div class="form-group"><label>From date <input name="start_date" type="date"></label></div><div class="form-group"><label>To date <input name="end_date" type="date"></label></div></div><p class="form-hint">Leave both dates blank for all-time history.</p><button class="btn-primary">Queue statement</button><output id="singleExpenseStatementStatus"></output></form></div></div>{% endblock %}{% block extra_js %}<script type="module" src="{% static 'frontend/js/expense-details.js' %}?v={{latest}}"></script>{% endblock %}
+{% block content %}
+<section class="expenses-page expense-details-page">
+    <a href="/expenses/" class="btn-secondary">← Expenses</a>
+    <article class="card">
+        <div class="card-header"><h2 id="expenseName">Loading expense…</h2><p id="expenseMeta"></p></div>
+        <div class="card-header expense-summary"><div><p>Total recorded for this item</p><h2 id="expenseTotal">KES 0.00</h2></div><button id="openExpenseStatement" class="btn-primary">Send expense statement</button></div>
+    </article>
+    <article class="card list-card">
+        <div class="card-header"><h2 id="expenseHistoryHeading">Expense history</h2><p>Every recorded purchase of this item.</p></div>
+        <div class="table-scroll-wrap"><table><thead><tr><th>Date</th><th>Item</th><th class="text-right">Amount (KES)</th></tr></thead><tbody id="expenseHistoryBody"><tr><td colspan="3" class="empty-state">Loading history…</td></tr></tbody></table></div>
+    </article>
+</section>
+<div id="expenseStatementModal" class="modal-overlay" hidden><div class="modal-card"><button class="modal-close" data-close-modal="expenseStatementModal">&times;</button><h2>Send expense statement</h2><form id="singleExpenseStatementForm" class="custom-form"><div class="form-group"><label>Destination email <input name="email" type="email" required></label></div><div class="form-row"><div class="form-group"><label>From date <input name="start_date" type="date"></label></div><div class="form-group"><label>To date <input name="end_date" type="date"></label></div></div><p class="form-hint">Leave both dates blank for all-time history.</p><button class="btn-primary">Queue statement</button><output id="singleExpenseStatementStatus"></output></form></div></div>
+{% endblock %}
+{% block extra_js %}<script type="module" src="{% static 'frontend/js/expense-details.js' %}?v={{latest}}"></script>{% endblock %}
