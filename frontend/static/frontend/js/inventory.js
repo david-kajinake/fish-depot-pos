@@ -1,5 +1,6 @@
 import { apiFetch } from './session.js';
 import { collectSupplyItems, supplyTotals } from './utils/inventory-utils.js';
+import { queueStatement, statementPayload, waitForStatement } from './utils/statementTasks.js';
 
 /* --- INVENTORY MODULE LOGIC --- */
 
@@ -45,6 +46,43 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('close-supply-modal-button').addEventListener('click', closeSupplyModal);
     document.getElementById('cancel-modal-btn').addEventListener('click', closeSupplyModal);
     document.getElementById('add-supply-row-button').addEventListener('click', addSupplyRow);
+
+    const statementModal = document.getElementById('stockStatementModal');
+    const statementForm = document.getElementById('stockStatementForm');
+    const statementStatus = document.getElementById('stockStatementStatus');
+    const closeStatementModal = () => {
+        statementModal.hidden = true;
+        statementModal.style.display = 'none';
+        statementStatus.textContent = '';
+    };
+    document.getElementById('open-statement-modal-button').addEventListener('click', () => {
+        statementModal.hidden = false;
+        statementModal.style.display = 'flex';
+        document.getElementById('statementEmail').focus();
+    });
+    document.getElementById('close-statement-modal-button').addEventListener('click', closeStatementModal);
+    document.getElementById('cancel-statement-button').addEventListener('click', closeStatementModal);
+    statementForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const submitButton = statementForm.querySelector('[type="submit"]');
+        submitButton.disabled = true;
+        statementStatus.textContent = 'Queuing statement…';
+        try {
+            const taskId = await queueStatement(
+                '/api/supply-invoices/generate-stock-supply-statement/',
+                statementPayload(statementForm),
+            );
+            await waitForStatement(taskId, (task) => {
+                statementStatus.textContent = task.status || 'Generating and sending statement…';
+            });
+            statementStatus.textContent = 'Statement sent successfully.';
+            statementForm.reset();
+        } catch (error) {
+            statementStatus.textContent = error.detail || error.email || error.date_range || error.message || 'Could not send statement.';
+        } finally {
+            submitButton.disabled = false;
+        }
+    });
 
     // Filter History Search
     document.getElementById('historySearchInput').addEventListener('input', (e) => {

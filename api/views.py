@@ -43,7 +43,13 @@ def queue_statement(task, request, **kwargs):
     end_date = request.data.get('end_date') or None
     if bool(start_date) != bool(end_date):
         return None, Response({'date_range': 'Provide both start_date and end_date, or neither.'}, status=status.HTTP_400_BAD_REQUEST)
-    task_result = task.delay(recipient_email=email, start_date=start_date, end_date=end_date, **kwargs)
+    task_result = task.delay(
+        recipient_email=email,
+        start_date=start_date,
+        end_date=end_date,
+        generated_by=str(request.user),
+        **kwargs,
+    )
     return task_result, None
 
 # Create your views here.
@@ -199,7 +205,7 @@ class CustomerViewSet( viewsets.ModelViewSet ):
             body='\n'.join(lines),
             to=[email],
         )
-        statement_pdf = StatementGenerator().generate_balance_history(customer)
+        statement_pdf = StatementGenerator(generated_by=request.user).generate_balance_history(customer)
         message.attach(f'{customer.name}--balance-statement.pdf', statement_pdf.read(), 'application/pdf')
         message.send(fail_silently=False)
         return Response({'detail': 'Statement sent.', 'email': email})
@@ -352,6 +358,17 @@ class SaleViewSet(viewsets.ModelViewSet):
 class SupplyInvoiceViewSet( viewsets.ModelViewSet ):
     queryset = SupplyInvoice.objects.all().order_by("-timestamp")
     serializer_class = SupplyInvoiceSerializer
+
+    @action(detail=False, methods=['post'], url_path='generate-stock-supply-statement', permission_classes=[Custom_permissions.CanGenerateStatements])
+    def generate_stock_supply_statement(self, request):
+        """Queue the all-stock-supplies statement for email delivery."""
+        task_result, error = queue_statement(tasks.generate_and_email_all_suppliers_statement, request)
+        if error:
+            return error
+        return Response(
+            {'detail': 'Stock supply statement queued.', 'task_id': task_result.id},
+            status=status.HTTP_202_ACCEPTED,
+        )
 
 
 class DayViewSet( viewsets.ModelViewSet ):

@@ -18,9 +18,14 @@
             <h1 class="page-heading">Inventory & Stock Center</h1>
             <p class="page-subheading">Monitor real-time freezer levels, record new incoming stock, and analyze supply trends.</p>
         </div>
-        <button id="open-supply-modal-button" class="btn-primary">
-            <i class="fa-solid fa-boxes-packing"></i> Record New Supply
-        </button>
+        <div class="inventory-header-actions">
+            <button id="open-statement-modal-button" class="btn-secondary">
+                <i class="fa-solid fa-file-pdf"></i> Send Statement
+            </button>
+            <button id="open-supply-modal-button" class="btn-primary">
+                <i class="fa-solid fa-boxes-packing"></i> Record New Supply
+            </button>
+        </div>
     </div>
 
     <!-- STATS OVERVIEW CARDS -->
@@ -178,6 +183,41 @@
                     <button type="submit" class="btn-primary" id="save-invoice-btn">
                         <i class="fa-solid fa-floppy-disk"></i> Save Invoice & Update Stock
                     </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="stockStatementModal" class="modal-overlay" hidden>
+    <div class="modal-content statement-modal-content" role="dialog" aria-modal="true" aria-labelledby="stockStatementTitle">
+        <div class="modal-header">
+            <div>
+                <h3 id="stockStatementTitle"><i class="fa-solid fa-file-pdf"></i> Send stock supply statement</h3>
+                <p>Email a statement covering all recorded stock supplies.</p>
+            </div>
+            <button type="button" id="close-statement-modal-button" class="close-btn" aria-label="Close">&times;</button>
+        </div>
+        <form id="stockStatementForm" class="statement-form">
+            <div class="form-group">
+                <label for="statementEmail">Destination email</label>
+                <input id="statementEmail" name="email" type="email" required>
+            </div>
+            <div class="form-meta-grid">
+                <div class="form-group">
+                    <label for="statementStartDate">From date <small>(optional)</small></label>
+                    <input id="statementStartDate" name="start_date" type="date">
+                </div>
+                <div class="form-group">
+                    <label for="statementEndDate">To date <small>(optional)</small></label>
+                    <input id="statementEndDate" name="end_date" type="date">
+                </div>
+            </div>
+            <div class="modal-actions-bar">
+                <output id="stockStatementStatus" aria-live="polite"></output>
+                <div class="action-buttons-right">
+                    <button type="button" id="cancel-statement-button" class="btn-cancel">Cancel</button>
+                    <button type="submit" class="btn-primary"><i class="fa-solid fa-paper-plane"></i> Send Statement</button>
                 </div>
             </div>
         </form>

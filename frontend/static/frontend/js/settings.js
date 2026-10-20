@@ -47,7 +47,7 @@ function configureRoleUi(user) {
     }
 
     // User Management tab elements
-    const userMgmtButton = document.getElementById('userManagementTabButton') || document.querySelector('[data-target="users-tab"]')?.parentElement;
+    const userMgmtButton = document.getElementById('navUserManagement') || document.querySelector('[data-target="users-tab"]')?.parentElement;
     const userMgmtPane = document.getElementById('users-tab');
     if (isAdmin && userMgmtButton && userMgmtPane) {
         userMgmtButton.hidden = false;
