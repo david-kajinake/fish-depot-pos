@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework import permissions, viewsets , status
 from rest_framework.response import Response
-from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
+from rest_framework.exceptions import AuthenticationFailed, PermissionDenied, ValidationError
 from rest_framework.decorators import action #For custom routes
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -25,6 +25,7 @@ from . import permissions as Custom_permissions #Custom permissions
 from . import tasks
 from celery.result import AsyncResult
 from django.db.models import Sum, Value, DecimalField, OuterRef, Exists, Subquery
+from django.db import transaction
 from django.utils import timezone
 from datetime import timedelta
 from decimal import Decimal
@@ -328,13 +329,77 @@ class FishViewSet( viewsets.ModelViewSet ):
 
 class SaleViewSet(viewsets.ModelViewSet):
    """
-    Because we overrode the create() method in SaleSerializer,
-    when a Desktop app sends a POST request here with the Cart JSON,
-    this ViewSet automatically processes the master Sale and the nested SaleItems!
+    Creates a sale and its nested items from the submitted cart JSON.
    """
    permission_classes = [permissions.AllowAny]
    queryset =Sale.objects.all().order_by("-timestamp")
    serializer_class = SaleSerializer
+
+   @transaction.atomic
+   def perform_create(self, serializer):
+       """Create a validated sale while protecting totals, stock, and debt balances."""
+       validated_data = serializer.validated_data.copy()
+       items_data = validated_data.pop('items')
+       # These values are calculated by the server below, not accepted from
+       # the request payload.
+       validated_data.pop('total_amount', None)
+       validated_data.pop('sale_type', None)
+
+       # Never trust sale totals or stock availability supplied by the browser.
+       # Aggregate first because a cashier can add the same fish size to more
+       # than one cart line.
+       requested_stock = {}
+       calculated_total = Decimal('0.00')
+       for item in items_data:
+           fish_size_id = item['fish_size'].pk
+           requested = requested_stock.setdefault(fish_size_id, {'weight': Decimal('0.00'), 'quantity': 0})
+           requested['weight'] += item['weight']
+           requested['quantity'] += item['quantity']
+           calculated_total += (item['weight'] * item['rate_charged']) + item.get('frying_fee_applied', Decimal('0.00'))
+
+       fish_sizes = {
+           fish_size.pk: fish_size
+           for fish_size in FishSize.objects.select_for_update().filter(pk__in=requested_stock)
+       }
+       for fish_size_id, requested in requested_stock.items():
+           fish_size = fish_sizes.get(fish_size_id)
+           if fish_size is None:
+               raise ValidationError({'items': f'Fish size {fish_size_id} no longer exists.'})
+           if requested['weight'] > fish_size.current_stock_kg:
+               raise ValidationError({'items': f'Only {fish_size.current_stock_kg} kg of size {fish_size.name} is in stock.'})
+           if requested['quantity'] > fish_size.current_stock_qty:
+               raise ValidationError({'items': f'Only {fish_size.current_stock_qty} pieces of size {fish_size.name} are in stock.'})
+
+       # Calculate the total server-side so a client cannot omit a frying fee.
+       customer_name = validated_data.pop('customer_name', '').strip()
+       if customer_name and not validated_data.get('customer'):
+           customer = Customer.objects.filter(name__iexact=customer_name).first()
+           if customer is None:
+               customer = Customer.objects.create(name=customer_name)
+           validated_data['customer'] = customer
+
+       amount_paid = validated_data['amount_paid_now']
+       customer = validated_data.get('customer')
+       if amount_paid != calculated_total and not customer:
+           raise ValidationError({'customer_name': 'A customer is required when payment differs from the sale total.'})
+       if customer and amount_paid > calculated_total + Decimal(customer.debt_balance):
+           raise ValidationError({'amount_paid_now': 'Amount cannot exceed the sale total plus the customer’s outstanding balance.'})
+
+       day, _ = Day.objects.get_or_create(date=timezone.localdate())
+       sale = Sale.objects.create(
+           cashier=self.request.user,
+           day=day,
+           total_amount=calculated_total,
+           sale_type='INSTANT' if amount_paid >= calculated_total else 'LATE',
+           **validated_data,
+       )
+       for item in items_data:
+           SaleItem.objects.create(sale=sale, **item)
+
+       if sale.customer and amount_paid != calculated_total:
+           sale.customer.debt_balance = Decimal(sale.customer.debt_balance) + (calculated_total - amount_paid)
+           sale.customer.save(update_fields=['debt_balance'])
+       serializer.instance = sale
 
    @action(detail= False, methods= ['get'], url_path= 'today')
    def get_today_sales(self, request, pk= None):

@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from django.db import transaction
 from django.utils import timezone
-from decimal import Decimal
 from .models import ( User, Customer, Supplier,
                       FishSize, Day, Sale, SaleItem, 
                       SupplyInvoice, FishStock, 
@@ -92,76 +91,6 @@ class SaleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sale
         fields = [ 'id', 'day' , 'cashier' , 'customer' , 'customer_name', 'customer_display_name', 'sale_type' , 'total_amount' , 'amount_paid_now' , 'timestamp' , 'items'  ]
-    
-    @transaction.atomic
-    def create(self , validated_data ):
-        #Get the request
-        request = self.context.get("request") 
-        #We extract the items list before creating the sale object
-        items_data = validated_data.pop('items')
-
-        # Never trust sale totals or stock availability supplied by the browser.
-        # Aggregate first because a cashier can add the same fish size to more
-        # than one cart line.
-        requested_stock = {}
-        calculated_total = Decimal('0.00')
-        for item in items_data:
-            fish_size_id = item['fish_size'].pk
-            requested = requested_stock.setdefault(fish_size_id, {'weight': Decimal('0.00'), 'quantity': 0})
-            requested['weight'] += item['weight']
-            requested['quantity'] += item['quantity']
-            calculated_total += (item['weight'] * item['rate_charged']) + item.get('frying_fee_applied', Decimal('0.00'))
-
-        fish_sizes = {
-            fish_size.pk: fish_size
-            for fish_size in FishSize.objects.select_for_update().filter(pk__in=requested_stock)
-        }
-        for fish_size_id, requested in requested_stock.items():
-            fish_size = fish_sizes.get(fish_size_id)
-            if fish_size is None:
-                raise serializers.ValidationError({'items': f'Fish size {fish_size_id} no longer exists.'})
-            if requested['weight'] > fish_size.current_stock_kg:
-                raise serializers.ValidationError({'items': f'Only {fish_size.current_stock_kg} kg of size {fish_size.name} is in stock.'})
-            if requested['quantity'] > fish_size.current_stock_qty:
-                raise serializers.ValidationError({'items': f'Only {fish_size.current_stock_qty} pieces of size {fish_size.name} are in stock.'})
-
-        # The total is the weight charge plus every frying fee, calculated on
-        # the server so a tampered client cannot omit a frying amount.
-        validated_data['total_amount'] = calculated_total
-        customer_name = validated_data.pop('customer_name', '').strip()
-        if customer_name and not validated_data.get('customer'):
-            # A cashier can type a new customer's name directly into the sale
-            # form.  Reuse an existing name regardless of casing so that
-            # "Amina" and "amina" do not become two customer records.
-            customer = Customer.objects.filter(name__iexact=customer_name).first()
-            if customer is None:
-                customer = Customer.objects.create(name=customer_name)
-            validated_data['customer'] = customer
-        total_amount = calculated_total
-        amount_paid = validated_data['amount_paid_now']
-        customer = validated_data.get('customer')
-        if amount_paid != total_amount and not customer:
-            raise serializers.ValidationError({'customer_name': 'A customer is required when payment differs from the sale total.'})
-        if customer and amount_paid > total_amount + Decimal(customer.debt_balance):
-            raise serializers.ValidationError({'amount_paid_now': 'Amount cannot exceed the sale total plus the customer’s outstanding balance.'})
-        validated_data['sale_type'] = 'INSTANT' if amount_paid >= total_amount else 'LATE'
-
-        # Create the day only after every validation above succeeds.
-        today_date = timezone.localdate()
-        day_object, created = Day.objects.get_or_create(date=today_date)
-        sale = Sale.objects.create( cashier = request.user , day = day_object ,  **validated_data)
-        
-        for item in items_data:
-            SaleItem.objects.create(
-                sale = sale , 
-                **item ,
-            )
-        if sale.customer and amount_paid != total_amount:
-            # Positive difference adds debt; a payment above the sale amount
-            # first settles the sale and then lowers existing debt.
-            sale.customer.debt_balance = Decimal(sale.customer.debt_balance) + (total_amount - amount_paid)
-            sale.customer.save(update_fields=['debt_balance'])
-        return sale
 
 
 class FishStockSerializer(serializers.ModelSerializer):
