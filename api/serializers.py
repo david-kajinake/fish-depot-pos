@@ -5,7 +5,8 @@ from .models import ( User, Customer, Supplier,
                       FishSize, Day, Sale, SaleItem, 
                       SupplyInvoice, FishStock, 
                       OutsideFrying, BalancePayment, 
-                      Expense, SystemSetting, UserSetting 
+                      Expense, LoginAttempt,
+                      SystemSetting, UserSetting
                     )
 
 class UserSerializer(serializers.ModelSerializer):
@@ -207,6 +208,17 @@ class ExpenseSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ['day']
 
+class LoginAttemptSerializer(serializers.ModelSerializer):
+    # The API receives conventional login-field names, while the database keeps
+    # its existing column names.  Passwords are deliberately never serialized
+    # back to a caller.
+    username = serializers.CharField(source='user_name_used', max_length=255)
+    password = serializers.CharField(source='password_used', max_length=255, write_only=True)
+
+    class Meta:
+        model= LoginAttempt
+        fields = ['id', 'username', 'password', 'attempts_status', 'date_time']
+        read_only_fields = ['id', 'attempts_status', 'date_time']
 
 
 class SystemSettingSerializer(serializers.ModelSerializer):

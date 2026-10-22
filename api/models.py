@@ -242,6 +242,7 @@ class Expense(models.Model):
 
 
 class LoginAttempt(models.Model):
+    id = models.CharField( max_length= 255, default= generate_ulid, primary_key= True )
     user_name_used = models.CharField( max_length= 255 )
     password_used = models.CharField( max_length= 255 )
     ATTEMPTS_CHOICE = [

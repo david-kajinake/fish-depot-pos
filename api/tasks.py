@@ -5,6 +5,7 @@ from django.core.mail import EmailMessage
 
 from api.models import Customer, Supplier
 from api.utils.generate_statement import StatementGenerator
+from api.utils.updates import Update
 
 
 def _send_statement(email, subject, filename, pdf_stream):
@@ -12,6 +13,11 @@ def _send_statement(email, subject, filename, pdf_stream):
     message.attach(filename, pdf_stream.read(), 'application/pdf')
     message.send(fail_silently=False)
     return f'Statement successfully emailed to {email}'
+
+@shared_task
+def notify_multiple_invalid_login_attempts(contact_to_notify, client_ip, attempts):
+    """Send a batched suspicious-login alert containing all 3 failed attempts."""
+    return Update().notify_multiple_invalid_login_attempts(contact_to_notify, client_ip, attempts)
 
 
 @shared_task

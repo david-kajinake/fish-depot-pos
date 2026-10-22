@@ -8,7 +8,7 @@ from django.contrib.auth.views import LogoutView
 from . views import (  
               TaskStatusView, UnifiedLoginView, JwtLogoutView, 
               CurrentUserView, SystemSettingView, 
-              UserSettingView, UserProfileUpdateView 
+              UserSettingView, UserProfileUpdateView, LoginAttemptViewSet
                      ) #API VIEWS
 from .views import(
     UsersViewset,
@@ -27,6 +27,7 @@ router.register(r'outside-frying', OutsideFryingViewSet) ,
 router.register(r'expenses', ExpenseViewSet, basename= "expenses" )
 router.register(r'fish-sizes',FishViewSet) , 
 router.register(r'days',DayViewSet),
+router.register(r'login-attempts', LoginAttemptViewSet, basename='login-attempts'),
 
 
 urlpatterns = [

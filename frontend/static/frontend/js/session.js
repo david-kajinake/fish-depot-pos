@@ -53,12 +53,37 @@ async function submitLogin(event) {
     const form = event.currentTarget;
     const button = document.getElementById('submit-btn');
     const error = document.getElementById('error-message');
-    button.disabled = true; button.textContent = 'Signing In...'; error.style.display = 'none';
+    button.disabled = true; 
+    button.textContent = 'Signing In...'; 
+    error.style.display = 'none';
+
     clearSession();
+
+    const username = form.username.value.trim();
+    const password = form.password.value;    
+
     try {
-        const response = await fetch('/api/auth/login/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: form.username.value.trim(), password: form.password.value }), credentials: 'omit' });
+        const response = await fetch('/api/auth/login/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }), credentials: 'omit' });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Wrong username or password.');
+
+
+        if (!response.ok) {
+            // Send failed credentials to backend to track consecutive attempts & trigger admin alert
+            try {
+                await fetch('/api/login-attempts/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password }),
+                    credentials: 'omit'
+                });
+            } catch (trackingErr) {
+                console.error("Failed to record login attempt:", trackingErr);
+            }
+
+            throw new Error(data.detail || 'Wrong username or password.');
+        }
+        
+
         localStorage.setItem(ACCESS_TOKEN_KEY, data.access);
         localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh);
         window.location.assign('/');

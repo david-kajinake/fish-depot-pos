@@ -1,10 +1,13 @@
 from decimal import Decimal
+from unittest.mock import patch
 
+from django.core import mail
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Customer, Day, Expense, FishSize, OutsideFrying, Supplier, SupplyInvoice, User
+from .models import Customer, Day, Expense, FishSize, LoginAttempt, OutsideFrying, Supplier, SupplyInvoice, User
+from .tasks import notify_invalid_login_attempt
 from .utils.generate_statement import StatementGenerator
 
 
@@ -117,3 +120,37 @@ class CustomerDebtFlowTests(TestCase):
         self.assertEqual(rejected.status_code, 400)
         response = self.client.post(f'/api/customers/{customer.id}/send-statement/', {'email': 'a@example.com', 'password': 'secret-pass'}, format='json')
         self.assertEqual(response.status_code, 200)
+
+
+@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+class LoginAttemptAlertTests(TestCase):
+    def setUp(self):
+        User.objects.create_user(username='admin', password='admin-password', email='admin@example.com')
+        self.client = APIClient()
+        self.payload = {'username': 'cashier', 'password': 'almost-right'}
+
+    @patch('api.views.tasks.notify_invalid_login_attempt.delay')
+    def test_third_consecutive_failure_is_saved_and_queued_for_notification(self, delay):
+        self.assertEqual(self.client.post('/api/login-attempts/', self.payload, format='json').status_code, 200)
+        self.assertEqual(self.client.post('/api/login-attempts/', self.payload, format='json').status_code, 200)
+        response = self.client.post('/api/login-attempts/', self.payload, format='json')
+
+        self.assertEqual(response.status_code, 202)
+        self.assertEqual(LoginAttempt.objects.count(), 1)
+        attempt = LoginAttempt.objects.get()
+        self.assertEqual(attempt.attempts_status, 'FAILED')
+        self.assertEqual(response.data['username'], 'cashier')
+        self.assertNotIn('password', response.data)
+        delay.assert_called_once_with(
+            contact_to_notify='admin@example.com', username='cashier', password='almost-right'
+        )
+
+    def test_alert_task_sends_html_email_with_attempted_credentials(self):
+        notify_invalid_login_attempt.run(
+            contact_to_notify='admin@example.com', username='cashier', password='almost-right'
+        )
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['admin@example.com'])
+        self.assertIn('cashier', mail.outbox[0].body)
+        self.assertIn('almost-right', mail.outbox[0].body)
+        self.assertEqual(mail.outbox[0].alternatives[0][1], 'text/html')

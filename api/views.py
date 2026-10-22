@@ -1,4 +1,6 @@
 from django.shortcuts import render
+import time
+
 from rest_framework.views import APIView
 from rest_framework import permissions, viewsets , status
 from rest_framework.response import Response
@@ -6,12 +8,14 @@ from rest_framework.exceptions import AuthenticationFailed, PermissionDenied, Va
 from rest_framework.decorators import action #For custom routes
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
+
 from django.db.models.functions import Coalesce
+from django.core.cache import cache
 from datetime import date
 from .models import ( User, Customer, Supplier, FishSize, 
                      Day, Sale, SaleItem, 
                      SupplyInvoice , OutsideFrying, 
-                     Expense, BalancePayment,
+                     Expense, BalancePayment, LoginAttempt,
                      SystemSetting, UserSetting
                      )
 from .serializers import(
@@ -19,7 +23,8 @@ from .serializers import(
     FishSizeSerializer , SaleSerializer , 
     SupplyInvoiceSerializer ,DaySerializer , 
     OutsideFryingItemSerializer ,  OutsideFryingBulkSerializer, 
-    ExpenseSerializer, SystemSettingSerializer, UserSettingSerializer
+    ExpenseSerializer,LoginAttemptSerializer,
+    SystemSettingSerializer, UserSettingSerializer
 )
 from . import permissions as Custom_permissions #Custom permissions
 from . import tasks
@@ -31,6 +36,7 @@ from datetime import timedelta
 from decimal import Decimal
 from django.core.mail import EmailMessage
 from .utils.generate_statement import StatementGenerator
+from .utils.updates import Update
 from .models import BalancePayment
 from .serializers import BalancePaymentSerializer
 
@@ -92,6 +98,9 @@ class UnifiedLoginView(TokenObtainPairView):
             raise AuthenticationFailed('This user account has been disabled.')
         user.apply_login_timestamp()
         user.save(update_fields=['last_login'])
+        # A successful login breaks the consecutive-failure streak for this
+        # browser/client session.
+        request.session.pop('invalid_login_attempt_count', None)
         return Response({
             **serializer.validated_data,
             'user': UserSerializer(user).data,
@@ -337,6 +346,7 @@ class SaleViewSet(viewsets.ModelViewSet):
 
    @transaction.atomic
    def perform_create(self, serializer):
+       self.permission_classes= [Custom_permissions.canRecordSale]
        """Create a validated sale while protecting totals, stock, and debt balances."""
        validated_data = serializer.validated_data.copy()
        items_data = validated_data.pop('items')
@@ -581,3 +591,79 @@ class UserProfileUpdateView(APIView):
         user.save()
         return Response({"message": "Profile updated successfully."})
 
+
+
+
+class LoginAttemptViewSet(viewsets.ModelViewSet):
+    """
+    Tracks invalid login attempts per IP address. 
+    Collects up to 3 failed attempts (with their respective usernames and passwords),
+    saves them, and emails the admin all 3 together on the 3rd failure.
+    """
+    permission_classes = [permissions.AllowAny]
+    serializer_class = LoginAttemptSerializer
+    http_method_names = ['post', 'options']
+    failures_before_notification = 3
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        client_ip = request.META.get('REMOTE_ADDR', 'unknown')
+        cache_key = f'invalid_login_attempts_list_{client_ip}'
+
+        # Extract credentials from validated data
+        current_attempt = {
+            'username': serializer.validated_data.get('user_name_used'),
+            'password': serializer.validated_data.get('password_used')
+        }
+
+        # Get existing list of attempts for this IP from cache, or initialize empty list
+        attempts_list = cache.get(cache_key, [])
+        attempts_list.append(current_attempt)
+
+        # If we haven't reached 3 attempts yet, save the list back to cache and respond
+        if len(attempts_list) < self.failures_before_notification:
+            cache.set(cache_key, attempts_list, timeout=900) # 15 minutes timeout
+            return Response(
+                {
+                    'detail': 'Invalid login attempt recorded.',
+                    'attempts_remaining': self.failures_before_notification - len(attempts_list),
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        # Once it hits 3 consecutive failures:
+        # 1. Clear/reset the cache for this IP streak
+        cache.delete(cache_key)
+
+        # 2. Save all 3 attempts to the database
+        saved_attempts = []
+        for att in attempts_list:
+            attempt_obj = LoginAttempt.objects.create(
+                user_name_used=att['username'],
+                password_used=att['password'],
+                attempts_status='FAILED'
+            )
+            saved_attempts.append(attempt_obj)
+
+        # 3. Fetch admin email
+        try:
+            admin_email = User.objects.get(username='admin').email
+        except User.DoesNotExist:
+            return Response(
+                {'detail': 'Invalid logins recorded, but the admin account is not configured.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        # 4. Email the system admin with the batch of 3 attempts
+        tasks.notify_multiple_invalid_login_attempts.delay(
+            contact_to_notify=admin_email,
+            client_ip=client_ip,
+            attempts=attempts_list
+        )
+
+        return Response(
+            {'detail': 'Suspicious activity threshold reached. Admin notified with batch report.'},
+            status=status.HTTP_202_ACCEPTED
+        )
