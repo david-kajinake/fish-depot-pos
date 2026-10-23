@@ -97,14 +97,16 @@ class UnifiedLoginView(TokenObtainPairView):
         if user.is_disabled:
             raise AuthenticationFailed('This user account has been disabled.')
         user.apply_login_timestamp()
-        user.save(update_fields=['last_login'])
         # A successful login breaks the consecutive-failure streak for this
         # browser/client session.
-        request.session.pop('invalid_login_attempt_count', None)
+        # Clear any failed login streak from the cache for this client IP upon success
+        client_ip = request.META.get('REMOTE_ADDR', 'unknown')
+        cache.delete(f'invalid_login_attempts_list_{client_ip}')
         return Response({
             **serializer.validated_data,
             'user': UserSerializer(user).data,
         })
+
 
 
 class JwtLogoutView(APIView):
