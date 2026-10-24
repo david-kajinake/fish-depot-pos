@@ -99,6 +99,7 @@ class SupplyInvoice(models.Model):
     # Financial tracking for the whole invoice
     total_invoice_cost = models.DecimalField(max_digits=12, decimal_places=2, default= Decimal(' 0.00'))
     total_weight = models.DecimalField( max_digits= 12 , decimal_places= 2, default= Decimal( 0.00 ) )
+    extra_fees= models.DecimalField(max_digits= 12, decimal_places=2, default=0.00)
     amount_paid_to_supplier = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     timestamp = models.DateTimeField(auto_now_add=True)
 

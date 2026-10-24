@@ -669,3 +669,5 @@ class LoginAttemptViewSet(viewsets.ModelViewSet):
             {'detail': 'Suspicious activity threshold reached. Admin notified with batch report.'},
             status=status.HTTP_202_ACCEPTED
         )
+
+    
