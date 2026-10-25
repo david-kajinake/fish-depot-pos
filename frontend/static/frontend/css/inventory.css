@@ -504,3 +504,21 @@ table tbody tr:hover {
 .text-center {
     text-align: center;
 }
+
+/* Spoilage history */
+.spoilage-card { overflow: hidden; padding: 0; }
+.spoilage-card .card-header { align-items: center; border-bottom: 1px solid var(--border-light); display: flex; gap: 1rem; justify-content: space-between; margin: 0; padding: 1.25rem 1.5rem; }
+.spoilage-form { border-bottom: 1px solid var(--border-light); display: grid; gap: 1rem; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 1rem 1.5rem; }
+.spoilage-form select { background: white; border: 1px solid var(--border-light); border-radius: 8px; padding: .75rem; }
+.spoilage-form .form-actions { align-self: end; margin: 0; }
+.spoilage-groups { display: grid; gap: 1rem; padding: 1rem; }
+.spoilage-day-group { border: 1px solid var(--border-light); border-radius: 10px; overflow: hidden; }
+.spoilage-day-heading { background: #eaf5ff; color: var(--ocean-blue); font-size: .9rem; font-weight: 700; margin: 0; padding: .7rem 1rem; }
+.spoilage-list { list-style: none; margin: 0; padding: 0; }
+.spoilage-list li { border-top: 1px solid var(--border-light); display: flex; gap: 1rem; justify-content: space-between; padding: .7rem 1rem; }
+.spoilage-list small { color: var(--text-muted); }
+
+@media (max-width: 700px) {
+    .spoilage-card .card-header { align-items: flex-start; flex-direction: column; }
+    .spoilage-form { grid-template-columns: 1fr; }
+}

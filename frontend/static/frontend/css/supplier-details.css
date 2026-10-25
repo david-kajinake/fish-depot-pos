@@ -241,6 +241,7 @@
     font-size: 0.85rem;
     color: var(--text-muted);
 }
+.supplier-invoice-groups{display:grid;gap:1rem;padding:1rem}.supplier-invoice-day{border:1px solid var(--border-light);border-radius:10px;overflow:hidden}.supplier-invoice-day h4{background:#eaf5ff;color:var(--ocean-blue);font-size:.9rem;margin:0;padding:.75rem 1rem}.supplier-invoice-cards{display:grid;gap:.75rem;padding:.75rem}.supplier-invoice-card{border:1px solid var(--border-light);border-radius:8px;overflow:hidden}.supplier-invoice-meta{display:grid;gap:.28rem;padding:.85rem}.supplier-invoice-meta span{font-size:.86rem}.supplier-invoice-meta b{color:var(--ocean-blue)}.supplier-invoice-table-wrap{overflow-x:auto}.supplier-invoice-table{border-collapse:collapse;min-width:560px;width:100%}.supplier-invoice-table th,.supplier-invoice-table td{border-top:1px solid var(--border-light);padding:.6rem;text-align:left;white-space:nowrap}.supplier-invoice-table th{background:#f8fafc;color:var(--ocean-blue);font-size:.68rem}.supplier-invoice-table td{font-size:.82rem}
 
 .table-responsive {
     width: 100%;

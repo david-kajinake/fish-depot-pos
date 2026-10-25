@@ -55,7 +55,7 @@ async function loadSalesData() {
         renderSizeChart();
     } catch (error) {
         console.error('Sales ledger error:', error);
-        document.getElementById('todaySalesBody').innerHTML = '<tr><td colspan="6" class="table-message">Could not load sales.</td></tr>';
+        document.getElementById('todaySalesBody').innerHTML = '<p class="table-message">Could not load sales.</p>';
         document.getElementById('pastSalesGroups').innerHTML = '<p class="table-message">Could not load sales history.</p>';
     }
 }
@@ -70,19 +70,18 @@ function renderLedger() {
 todaySaleCount
 function renderToday(sales) {
     const outsideFryings = (businessDays.find((day) => day.date === dayKey(new Date())) || {}).outside_fryings || [];
-    const entries = ledgerEntries(sales, outsideFryings);
-    const revenue = entries.reduce((total, entry) => total + entry.amount, 0);
+    const revenue = sales.reduce((total, sale) => total + Number(sale.total_amount || 0), 0);
     const weight = sales.reduce((total, sale) => total + (sale.items || []).reduce((itemTotal, item) => itemTotal + Number(item.weight || 0), 0), 0);
-    document.getElementById('todaySaleCount').textContent = entries.length;
+    document.getElementById('todaySaleCount').textContent = sales.length;
     document.getElementById('todayRevenue').textContent = money.format(revenue);
-    document.getElementById('todayOutsideFrying').textContent = 
+    document.getElementById('todayOutsideFrying').textContent = money.format(outsideFryings.reduce((total, item) => total + Number(item.total_fee || 0), 0));
     document.getElementById('todayWeight').textContent = `${weight.toFixed(2)} kg`;
     const body = document.getElementById('todaySalesBody');
-    if (!entries.length) {
-        body.innerHTML = '<tr><td colspan="6" class="table-message">No sales have been recorded today.</td></tr>';
+    if (!sales.length) {
+        body.innerHTML = '<p class="table-message">No sales have been recorded today.</p>';
         return;
     }
-    body.innerHTML = entries.map(renderLedgerRow).join('');
+    body.innerHTML = sales.map(renderSaleCard).join('');
 }
 
 function renderPastDays(days) {
@@ -92,11 +91,21 @@ function renderPastDays(days) {
         return;
     }
     container.innerHTML = days.map((day) => {
-        const entries = ledgerEntries(day.sales || [], day.outside_fryings || []);
-        const total = entries.reduce((sum, entry) => sum + entry.amount, 0);
-        const items = entries.map((entry) => `<li><small>${entry.time}</small><span>${escapeHtml(entry.customer)}<br><small>${escapeHtml(entry.description)}</small></span><strong>${money.format(entry.amount)}</strong></li>`).join('') || '<li><small>No sales or frying jobs</small></li>';
-        return `<article class="sales-day-group"><div class="sales-day-heading"><span>${displayDate(day.date)}</span><span>${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} · ${money.format(total)}</span></div><ul>${items}</ul></article>`;
+        const sales = day.sales || [];
+        const total = sales.reduce((sum, sale) => sum + Number(sale.total_amount || 0), 0);
+        const cards = sales.map(renderSaleCard).join('') || '<p class="table-message">No sales recorded for this day.</p>';
+        return `<article class="sales-day-group"><div class="sales-day-heading"><strong>${displayDate(day.date)}</strong><span>${sales.length} ${sales.length === 1 ? 'sale' : 'sales'} · ${money.format(total)}</span></div><div class="sale-card-list">${cards}</div></article>`;
     }).join('');
+}
+
+function renderSaleCard(sale) {
+    const items = sale.items || [];
+    const rows = items.map((item) => {
+        const amount = Number(item.weight || 0) * Number(item.rate_charged || 0);
+        const fryFee = Number(item.frying_fee_applied || 0);
+        return `<tr><td>${escapeHtml(item.fish_size_name || item.fish_size)}</td><td>${escapeHtml(item.quantity)}</td><td>${Number(item.weight || 0).toFixed(2)}</td><td>${money.format(Number(item.rate_charged || 0))}</td><td>${money.format(amount)}</td><td>${item.is_fried ? 'Yes' : 'No'}</td><td>${money.format(fryFee)}</td><td>${money.format(amount + fryFee)}</td></tr>`;
+    }).join('') || '<tr><td colspan="8" class="table-message">No sale items.</td></tr>';
+    return `<article class="sale-card"><div class="sale-card-meta"><span><b>ID:</b> ${escapeHtml(sale.id)}</span><span><b>Cashier:</b> ${escapeHtml(sale.cashier_display_name || '—')}</span><span><b>Customer:</b> ${escapeHtml(sale.customer_display_name || 'Walk-in')}</span><span><b>Total Amount:</b> ${money.format(Number(sale.total_amount || 0))}</span><span><b>Amount Paid:</b> ${money.format(Number(sale.amount_paid_now || 0))}</span></div><div class="sale-item-table-wrap"><table class="sale-item-table"><thead><tr><th>Size</th><th>Qty</th><th>Weight</th><th>Rate</th><th>Amount: Fish price</th><th>Fried</th><th>Fry fee</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table></div></article>`;
 }
 
 function ledgerEntries(sales, outsideFryings) {

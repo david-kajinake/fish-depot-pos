@@ -97,9 +97,10 @@ class SupplyInvoice(models.Model):
     day = models.ForeignKey(Day, on_delete=models.CASCADE, related_name='supply_invoices')
     supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True, related_name="invoices")
     # Financial tracking for the whole invoice
-    total_invoice_cost = models.DecimalField(max_digits=12, decimal_places=2, default= Decimal(' 0.00'))
+    invoice_amount = models.DecimalField(max_digits=12, decimal_places=2, default= Decimal(' 0.00')) # Only Fish charges
     total_weight = models.DecimalField( max_digits= 12 , decimal_places= 2, default= Decimal( 0.00 ) )
-    extra_fees= models.DecimalField(max_digits= 12, decimal_places=2, default=0.00)
+    extra_fees= models.DecimalField(max_digits= 12, decimal_places=2, default=0.00)# Could be packaging / delivery
+    total_invoice_cost= models.DecimalField(max_digits= 12, decimal_places= 2, default= 0.00)# invoice_amount + extra_fees
     amount_paid_to_supplier = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     timestamp = models.DateTimeField(auto_now_add=True)
 
@@ -152,11 +153,30 @@ class FishStock(models.Model):
 
             #Update the Master Invoice Total 
             self.invoice.total_weight += self.weight_received 
-            self.invoice.total_invoice_cost += self.total_cost
+            self.invoice.invoice_amount += self.total_cost
+            self.invoice.total_invoice_cost = self.invoice.invoice_amount + self.invoice.extra_fees
             self.invoice.save()
     
     def __str__( self ):
         return f"{self.weight_received}Kg of {self.fish_size.name}"
+
+
+class Spoilage(models.Model):
+    id= models.CharField(max_length= 255, primary_key= True, default= generate_ulid)
+    fish_size= models.ForeignKey(FishSize, on_delete= models.PROTECT, related_name= 'spoilages')
+    weight= models.DecimalField(max_digits= 12, decimal_places= 2, null= False, blank= False)
+    quantity= models.IntegerField( null= False, blank= False )
+    recorded_by= models.ForeignKey(User, on_delete= models.PROTECT, related_name= 'spoilages_recorded')
+    day_recorded= models.DateField( auto_now_add= True )
+
+    def save(self, *args, **kwargs):
+        # Deduct only once: editing an existing audit record must not deduct stock again.
+        if self._state.adding:
+            self.fish_size.current_stock_qty -= self.quantity
+            self.fish_size.current_stock_kg -= self.weight
+            self.fish_size.save()
+        super().save(*args, **kwargs)
+
 
 
 

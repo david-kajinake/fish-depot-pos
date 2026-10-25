@@ -53,14 +53,20 @@ function render(history) {
     customerStatementEmail.value = customer.email || '';
 
     const byDay = history.reduce((groups, sale) => {
-        const day = new Date(sale.timestamp).toLocaleDateString('en-KE', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+        const day = sale.day || new Date(sale.timestamp).toLocaleDateString('en-CA');
         (groups[day] ||= []).push(sale);
         return groups;
     }, {});
-    customerHistoryBody.innerHTML = history.length ? Object.entries(byDay).map(([day, sales]) => [
-        `<tr class="history-day"><th colspan="5">${esc(day)}</th></tr>`,
-        ...sales.map((sale) => `<tr><td>${new Date(sale.timestamp).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}</td><td>#${esc(sale.id).slice(0, 8)}</td><td>${esc((sale.items || []).map((item) => `Size ${item.fish_size_name || item.fish_size} × ${item.quantity}`).join(', '))}</td><td>${(sale.items || []).reduce((sum, item) => sum + Number(item.weight || 0), 0).toFixed(2)} kg</td><td>${money.format(Number(sale.total_amount))}</td></tr>`)
-    ].join('')).join('') : '<tr><td colspan="5" class="customer-empty">No sales recorded.</td></tr>';
+    customerHistoryBody.innerHTML = history.length ? Object.entries(byDay).map(([day, sales]) => `<section class="customer-sale-day"><h3>${esc(new Date(`${day}T12:00:00`).toLocaleDateString('en-KE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }))}</h3><div class="customer-sale-cards">${sales.map(renderSaleCard).join('')}</div></section>`).join('') : '<p class="customer-empty">No sales recorded.</p>';
+}
+
+function renderSaleCard(sale) {
+    const rows = (sale.items || []).map((item) => {
+        const amount = Number(item.weight || 0) * Number(item.rate_charged || 0);
+        const fryFee = Number(item.frying_fee_applied || 0);
+        return `<tr><td>${esc(item.fish_size_name || item.fish_size)}</td><td>${esc(item.quantity)}</td><td>${Number(item.weight || 0).toFixed(2)}</td><td>${money.format(Number(item.rate_charged || 0))}</td><td>${money.format(amount)}</td><td>${item.is_fried ? 'Yes' : 'No'}</td><td>${money.format(fryFee)}</td><td>${money.format(amount + fryFee)}</td></tr>`;
+    }).join('') || '<tr><td colspan="8">No sale items.</td></tr>';
+    return `<article class="customer-sale-card"><div class="customer-sale-meta"><span><b>ID:</b> ${esc(sale.id)}</span><span><b>Cashier:</b> ${esc(sale.cashier_display_name || '—')}</span><span><b>Customer:</b> ${esc(sale.customer_display_name || customer.name)}</span><span><b>Total Amount:</b> ${money.format(Number(sale.total_amount || 0))}</span><span><b>Amount Paid:</b> ${money.format(Number(sale.amount_paid_now || 0))}</span></div><div class="customer-sale-table-wrap"><table class="customer-sale-table"><thead><tr><th>Size</th><th>Qty</th><th>Weight</th><th>Rate</th><th>Amount: Fish price</th><th>Fried</th><th>Fry fee</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table></div></article>`;
 }
 
 async function save(event) {

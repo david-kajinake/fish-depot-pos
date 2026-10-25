@@ -1,6 +1,7 @@
 .env
 api/__pycache__/
-api/migrations
+api/migrations/*
+!api/migrations/0013_spoilage.py
 api/utils/__pycache__/
 core/__pycache__/
 frontend/__pycache__/

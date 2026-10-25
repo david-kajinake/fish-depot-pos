@@ -186,6 +186,57 @@ class StatementGenerator:
     def _money(value):
         return f'KES {Decimal(value):,.2f}'
 
+    def _generate_record_cards(self, title, subtitle, records, kind):
+        """Render sales or supply invoices as day-grouped cards with item tables."""
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=self.margin, rightMargin=self.margin,
+                                topMargin=self.margin, bottomMargin=self.margin)
+        styles = getSampleStyleSheet()
+        usable = self.page_width - 2 * self.margin
+        title_style = ParagraphStyle('card-title', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=16, textColor=colors.white)
+        sub_style = ParagraphStyle('card-subtitle', parent=styles['Normal'], fontSize=9, textColor=colors.white)
+        label_style = ParagraphStyle('card-label', parent=styles['Normal'], fontSize=8, leading=11, textColor=colors.HexColor('#17324d'))
+        day_style = ParagraphStyle('card-day', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, textColor=colors.HexColor('#00509e'))
+        banner = Table([[Paragraph('FRESH VICTORIA FISH', title_style)], [Paragraph(f'{title}<br/>{subtitle}', sub_style)]], colWidths=[usable])
+        banner.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#00509e')), ('LEFTPADDING', (0, 0), (-1, -1), 12), ('TOPPADDING', (0, 0), (-1, -1), 9), ('BOTTOMPADDING', (0, 0), (-1, -1), 9)]))
+        story = [banner, Spacer(1, 12), self._generated_by_paragraph(styles), Spacer(1, 10)]
+        grouped = {}
+        for record in records:
+            day = record.day.date if getattr(record, 'day_id', None) else record.timestamp.date()
+            grouped.setdefault(day, []).append(record)
+        if not grouped:
+            story.append(Paragraph('No entries found for this period.', styles['BodyText']))
+        # The sales page presents the newest business day first; keep the PDF in
+        # the same order so the two views can be compared line-for-line.
+        for day, entries in sorted(grouped.items(), reverse=True):
+            story.extend([Paragraph(self._display_date(day), day_style), Spacer(1, 5)])
+            for record in entries:
+                if kind == 'sale':
+                    labels = [
+                        f'<b>ID:</b> {record.id}', f'<b>Cashier:</b> {record.cashier_id}',
+                        f'<b>Customer:</b> {record.customer.name if record.customer else "Walk-in"}',
+                        f'<b>Total Amount:</b> {self._money(record.total_amount)}',
+                        f'<b>Amount Paid:</b> {self._money(record.amount_paid_now)}',
+                    ]
+                    headers = ['SIZE', 'QTY', 'WEIGHT', 'RATE', 'AMOUNT: Fish price', 'FRIED: Yes / No', 'FRY FEE', 'TOTAL: AMOUNT + FRY FEE']
+                    rows = [[item.fish_size.name, item.quantity, f'{item.weight:.2f}', self._money(item.rate_charged), self._money(item.weight * item.rate_charged), 'Yes' if item.is_fried else 'No', self._money(item.frying_fee_applied), self._money((item.weight * item.rate_charged) + item.frying_fee_applied)] for item in record.items.select_related('fish_size').all()]
+                else:
+                    labels = [
+                        f'<b>ID:</b> {record.id}', f'<b>Supplier:</b> {record.supplier.name if record.supplier else "Unknown"}',
+                        f'<b>Invoice Amount:</b> {self._money(record.invoice_amount)}', f'<b>Extra fees:</b> {self._money(record.extra_fees)}',
+                        f'<b>Invoice Total Cost:</b> {self._money(record.total_invoice_cost)}',
+                    ]
+                    headers = ['SIZE', 'QTY', 'WEIGHT', 'RATE', 'AMOUNT']
+                    rows = [[item.fish_size.name, item.quantity, f'{item.weight_received:.2f}', self._money(item.unit_buying_price), self._money(item.total_cost)] for item in record.stock_items.select_related('fish_size').all()]
+                meta = Table([[Paragraph(label, label_style)] for label in labels], colWidths=[usable])
+                meta.setStyle(TableStyle([('BOX', (0, 0), (-1, -1), .5, colors.HexColor('#d8e8f2')), ('LEFTPADDING', (0, 0), (-1, -1), 8), ('TOPPADDING', (0, 0), (-1, -1), 3), ('BOTTOMPADDING', (0, 0), (-1, -1), 3)]))
+                table = Table([headers] + rows, repeatRows=1, colWidths=[usable / len(headers)] * len(headers))
+                table.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#edf8ff')), ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#00509e')), ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'), ('FONTSIZE', (0, 0), (-1, -1), 6), ('GRID', (0, 0), (-1, -1), .35, colors.HexColor('#d8e8f2')), ('TOPPADDING', (0, 0), (-1, -1), 4), ('BOTTOMPADDING', (0, 0), (-1, -1), 4)]))
+                story.extend([meta, table, Spacer(1, 10)])
+        doc.build(story)
+        buffer.seek(0)
+        return buffer
+
 
 
     def generate_customer_sales_statement(self, customer_object, start_date=None, end_date=None):
@@ -193,6 +244,15 @@ class StatementGenerator:
         Generates a PDF statement showing how a customer picked fish over time.
         If start_date and end_date are provided, filters by range. Otherwise, fetches all.
         """
+        sales = self._filter_timestamp(
+            Sale.objects.filter(customer=customer_object)
+            .select_related('customer', 'cashier', 'day')
+            .prefetch_related('items__fish_size')
+            .order_by('-day__date', '-timestamp'),
+            start_date,
+            end_date,
+        )
+        return self._generate_record_cards(f'Customer sales statement - {customer_object.name}', self._range_label(start_date, end_date), sales, 'sale')
         styles = getSampleStyleSheet()
         
         header_title_style = ParagraphStyle(
@@ -332,13 +392,15 @@ class StatementGenerator:
            time range. absolutely all of them are returned if no range was specified.
            it does not apply to a single or specific group of customers
         """
-        sales = self._filter_timestamp(Sale.objects.all().order_by('timestamp'), start_date, end_date)
-        rows = [[sale.timestamp, f'#{sale.id[:8]}', sale.customer.name if sale.customer else 'Walk-in', sale.total_amount, sale.amount_paid_now] for sale in sales]
-        return self._generate_tabular_statement(
-            'Sales statement', self._range_label(start_date, end_date),
-            ['Date', 'Reference', 'Customer', 'Sale amount', 'Paid now'], rows,
-            ['Sales total', self._money(sum((Decimal(sale.total_amount) for sale in sales), Decimal('0.00')))],
+        sales = self._filter_timestamp(
+            Sale.objects.select_related('customer', 'cashier', 'day')
+            .prefetch_related('items__fish_size')
+            .all()
+            .order_by('-day__date', '-timestamp'),
+            start_date,
+            end_date,
         )
+        return self._generate_record_cards('Sales statement', self._range_label(start_date, end_date), sales, 'sale')
 
 
 
@@ -348,13 +410,8 @@ class StatementGenerator:
         it returns all stock supplies associated with a supplier in a specified time range.
         absolutely all supplies are returned if no time range has been defined
         """
-        invoices = self._filter_timestamp(supplier_object.invoices.all().order_by('timestamp'), start_date, end_date)
-        rows = [[invoice.timestamp, f'#{invoice.id[:8]}', invoice.total_weight, invoice.total_invoice_cost, invoice.amount_paid_to_supplier] for invoice in invoices]
-        return self._generate_tabular_statement(
-            f'Supplier stock supply statement - {supplier_object.name}', self._range_label(start_date, end_date),
-            ['Date', 'Invoice', 'Weight (kg)', 'Invoice cost', 'Paid'], rows,
-            ['Supply cost total', self._money(sum((Decimal(invoice.total_invoice_cost) for invoice in invoices), Decimal('0.00')))],
-        )
+        invoices = self._filter_timestamp(supplier_object.invoices.select_related('supplier', 'day').prefetch_related('stock_items__fish_size').all().order_by('day__date', 'timestamp'), start_date, end_date)
+        return self._generate_record_cards(f'Supplier stock supply statement - {supplier_object.name}', self._range_label(start_date, end_date), invoices, 'supply')
 
 
 
@@ -364,13 +421,8 @@ class StatementGenerator:
         absolutely all supplies are returned if no time range was defined.
         it does not apply to a single or specific group of suppliers. it applies to all stock supplies
         """
-        invoices = self._filter_timestamp(SupplyInvoice.objects.select_related('supplier').all().order_by('timestamp'), start_date, end_date)
-        rows = [[invoice.timestamp, f'#{invoice.id[:8]}', invoice.supplier.name if invoice.supplier else 'Unknown', invoice.total_weight, invoice.total_invoice_cost] for invoice in invoices]
-        return self._generate_tabular_statement(
-            'All stock supplies statement', self._range_label(start_date, end_date),
-            ['Date', 'Invoice', 'Supplier', 'Weight (kg)', 'Invoice cost'], rows,
-            ['Supply cost total', self._money(sum((Decimal(invoice.total_invoice_cost) for invoice in invoices), Decimal('0.00')))],
-        )
+        invoices = self._filter_timestamp(SupplyInvoice.objects.select_related('supplier', 'day').prefetch_related('stock_items__fish_size').all().order_by('day__date', 'timestamp'), start_date, end_date)
+        return self._generate_record_cards('All stock supplies statement', self._range_label(start_date, end_date), invoices, 'supply')
 
 
     def generate_single_expenses_statement(self, expense_name, start_date= None, end_date= None):

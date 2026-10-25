@@ -119,6 +119,18 @@
         </div>
     </div>
 
+    <section class="card spoilage-card">
+        <div class="card-header">
+            <div><h3><i class="fa-solid fa-triangle-exclamation"></i> Spoilages</h3><p>Spoiled fish is removed from the available stock when recorded.</p></div>
+            <button id="toggleSpoilageForm" class="btn-secondary" type="button">Record spoilage</button></div>
+        <form id="spoilageForm" class="spoilage-form hidden">
+            <div class="form-group"><label for="spoilageFishSize">Fish size</label><select id="spoilageFishSize" required><option value="">Select size</option></select></div>
+            <div class="form-group"><label for="spoilageQuantity">Quantity</label><input id="spoilageQuantity" min="1" type="number" required></div>
+            <div class="form-group"><label for="spoilageWeight">Weight (kg)</label><input id="spoilageWeight" min="0.01" step="0.01" type="number" required></div>
+            <div class="form-actions"><button class="btn-primary" type="submit">Save spoilage</button></div>
+        </form>
+        <div id="spoilageGroups" class="spoilage-groups"><p class="text-center">Loading spoilages...</p></div>
+    </section>
 </div>
 
 <!-- RECORD SUPPLY MODAL -->

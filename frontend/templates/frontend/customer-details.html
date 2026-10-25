@@ -31,7 +31,7 @@
     </section>
     <section id="customerEditPanel" class="detail-card" hidden><h2>Edit customer</h2>{% include 'frontend/components/customer_edit_form_component.html' %}</section>
     <section id="detailPaymentPanel" class="detail-card" hidden><h2>Record balance payment</h2>{% include 'frontend/components/customer_detail_balance_payment_form_component.html' %}</section>
-    <section class="detail-card"><div class="list-title"><div><p class="customer-eyebrow">Sales ledger</p><h2>Customer sales history</h2><p>Sales are grouped by day.</p></div></div><div class="customer-table-wrap"><table><thead><tr><th>Date</th><th>Reference</th><th>Items</th><th>Weight</th><th>Amount</th></tr></thead><tbody id="customerHistoryBody"><tr><td colspan="5" class="customer-empty">Loading sales…</td></tr></tbody></table></div></section>
+    <section class="detail-card"><div class="list-title"><div><p class="customer-eyebrow">Sales ledger</p><h2>Customer sales history</h2><p>Sales are grouped by day.</p></div></div><div id="customerHistoryBody" class="customer-sale-groups"><p class="customer-empty">Loading sales…</p></div></section>
     <section class="detail-card"><p class="customer-eyebrow">Direct outreach</p><h2>Send customer message</h2>{% include 'frontend/components/customer_detail_message_form_component.html' %}</section>
 </section>
 <div id="customerStatementModal" class="customer-modal" hidden><div class="modal-card"><button id="closeCustomerStatement" class="modal-close" type="button">&times;</button><h2>Send customer statement</h2>{% include 'frontend/components/customer_statement_form_component.html' %}</div></div>

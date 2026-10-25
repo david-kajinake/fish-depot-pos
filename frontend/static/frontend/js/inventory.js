@@ -39,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initAnalyticsChart();
     loadLiveStock();
     fetchPastSupplyInvoices();
+    loadSpoilages();
 
     // Modal Events
     const supplyModal = document.getElementById('supplyModal');
@@ -103,6 +104,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // Form Submission
     document.getElementById('supply-form').addEventListener('submit', handleInvoiceSubmission);
 
+    // Spoilage section
+    document.getElementById('toggleSpoilageForm').onclick = () => document.getElementById('spoilageForm').classList.toggle('hidden');
+    document.getElementById('spoilageForm').onsubmit = recordSpoilage;
+
     /* --- Modal Handlers --- */
     async function openSupplyModal() {
         // Ensure the foreign-key dropdown is populated before a row is made.
@@ -164,6 +169,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const response = await apiFetch('/api/fish-sizes/');
             fishSizesData = await response.json();
+            populateSpoilageSizeDropdown();
             
             const tbody = document.getElementById('stockTableBody');
             tbody.innerHTML = '';
@@ -210,6 +216,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } catch (err) {
             console.error("Error loading live stock:", err);
+        }
+    }
+
+    function populateSpoilageSizeDropdown() {
+        const select = document.getElementById('spoilageFishSize');
+        select.innerHTML = '<option value="">Select size</option>';
+        fishSizesData.forEach((fish) => {
+            select.innerHTML += `<option value="${fish.id}">Size ${fish.name}</option>`;
+        });
+    }
+
+    async function loadSpoilages() {
+        try {
+            const response = await apiFetch('/api/spoilages/');
+            if (!response.ok) throw new Error('Could not load spoilages.');
+            renderSpoilages(await response.json());
+        } catch (error) {
+            console.error(error);
+            document.getElementById('spoilageGroups').innerHTML = '<p class="text-center">Could not load spoilages.</p>';
         }
     }
 
@@ -442,5 +467,24 @@ document.addEventListener("DOMContentLoaded", () => {
         analyticsChart.data.labels = labels;
         analyticsChart.data.datasets[0].data = values;
         analyticsChart.update();
+    }
+
+    function renderSpoilages(spoilages) {
+        const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+        const groups = spoilages.reduce((byDay, entry) => { (byDay[entry.day_recorded] ||= []).push(entry); return byDay; }, {});
+        document.getElementById('spoilageGroups').innerHTML = Object.entries(groups).map(([day, entries]) => {
+            const heading = new Date(`${day}T12:00:00`).toLocaleDateString('en-KE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const entriesHtml = entries.map((entry) => `<li><span>Size ${escapeHtml(entry.fish_size_name || entry.fish_size)} · ${escapeHtml(entry.quantity)} pieces · ${Number(entry.weight).toFixed(2)} kg</span><small>Recorded by ${escapeHtml(entry.recorded_by_name || entry.recorded_by)}</small></li>`).join('');
+            return `<section class="spoilage-day-group"><h4 class="spoilage-day-heading">${escapeHtml(heading)}</h4><ul class="spoilage-list">${entriesHtml}</ul></section>`;
+        }).join('') || '<p class="text-center">No spoilages recorded.</p>';
+    }
+
+    async function recordSpoilage(event) {
+        event.preventDefault();
+        const response = await apiFetch('/api/spoilages/', { method: 'POST', body: JSON.stringify({ fish_size: document.getElementById('spoilageFishSize').value, quantity: Number(document.getElementById('spoilageQuantity').value), weight: document.getElementById('spoilageWeight').value }) });
+        if (!response.ok) return alert(`Could not record spoilage: ${JSON.stringify(await response.json())}`);
+        event.currentTarget.reset();
+        event.currentTarget.classList.add('hidden');
+        await Promise.all([loadLiveStock(), loadSpoilages()]);
     }
 });

@@ -78,6 +78,11 @@
         </div>
     </div>
 
+    <section class="card invoice-history-card">
+        <div class="card-header"><div><h3><i class="fa-solid fa-file-invoice"></i> Stock supply history</h3><p>Invoices are grouped by the day they were recorded.</p></div></div>
+        <div id="allInvoiceGroups" class="invoice-groups"><p class="text-center">Loading stock supplies...</p></div>
+    </section>
+
 </div>
 <div id="allSuppliersStatementModal" class="modal-overlay" hidden><div class="modal-content"><div class="modal-header"><h3>Send all suppliers statement</h3><button type="button" class="close-btn" data-close-statement="allSuppliersStatementModal">&times;</button></div><form id="allSuppliersStatementForm"><div class="form-group"><label>Destination email</label><input name="email" type="email" required></div><div class="form-group"><label>From date <input name="start_date" type="date"></label></div><div class="form-group"><label>To date <input name="end_date" type="date"></label></div><button class="btn-primary">Queue statement</button><output id="allSuppliersStatementStatus"></output></form></div></div>
 

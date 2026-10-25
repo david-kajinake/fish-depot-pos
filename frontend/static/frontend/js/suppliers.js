@@ -5,10 +5,13 @@ let allSuppliers = [];
 let supplierChart = null;
 
 const authFetch = apiFetch;
+const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' });
 
 document.addEventListener("DOMContentLoaded", () => {
     initChart();
     loadSuppliersData();
+    loadInvoiceHistory();
 
     // Modal logic
     const modal = document.getElementById('supplierModal');
@@ -90,6 +93,27 @@ async function loadSuppliersData() {
         console.error("Failed to load suppliers:", err);
         document.getElementById('suppliersTableBody').innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error loading suppliers</td></tr>`;
     }
+}
+
+async function loadInvoiceHistory() {
+    try {
+        const invoiceResponse = await authFetch('/api/supply-invoices/');
+        if (!invoiceResponse.ok) throw new Error('Could not load supply history.');
+        renderInvoices(await invoiceResponse.json());
+    } catch (error) {
+        console.error(error);
+        document.getElementById('allInvoiceGroups').innerHTML = '<p class="text-center">Could not load stock supplies.</p>';
+    }
+}
+
+function renderInvoices(invoices) {
+    const groups = invoices.reduce((byDay, invoice) => { const day = invoice.day || String(invoice.timestamp).slice(0, 10); (byDay[day] ||= []).push(invoice); return byDay; }, {});
+    document.getElementById('allInvoiceGroups').innerHTML = Object.entries(groups).map(([day, entries]) => `<section class="invoice-day-group"><h4 class="invoice-day-heading">${esc(new Date(`${day}T12:00:00`).toLocaleDateString('en-KE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }))}</h4><div class="invoice-cards">${entries.map(renderInvoiceCard).join('')}</div></section>`).join('') || '<p class="text-center">No stock supplies recorded.</p>';
+}
+
+function renderInvoiceCard(invoice) {
+    const rows = (invoice.stock_items || []).map((item) => `<tr><td>${esc(item.fish_size_name || item.fish_size)}</td><td>${esc(item.quantity)}</td><td>${Number(item.weight || 0).toFixed(2)}</td><td>${money.format(Number(item.rate || 0))}</td><td>${money.format(Number(item.total_cost || 0))}</td></tr>`).join('') || '<tr><td colspan="5">No stock items.</td></tr>';
+    return `<article class="invoice-card"><div class="invoice-meta"><span><b>ID:</b> ${esc(invoice.id)}</span><span><b>Supplier:</b> ${esc(invoice.supplier_name || invoice.supplier || '—')}</span><span><b>Invoice Amount:</b> ${money.format(Number(invoice.invoice_amount || 0))}</span><span><b>Extra fees:</b> ${money.format(Number(invoice.extra_fees || 0))}</span><span><b>Invoice Total Cost:</b> ${money.format(Number(invoice.total_invoice_cost || 0))}</span></div><div class="invoice-table-wrap"><table class="invoice-items-table"><thead><tr><th>Size</th><th>Qty</th><th>Weight</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table></div></article>`;
 }
 
 async function submitStatement(event, endpoint, statusId) {

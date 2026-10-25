@@ -5,6 +5,8 @@ let currentSupplierId = null;
 let currentSupplierData = null;
 
 const authFetch = apiFetch;
+const money = new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' });
+const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // Extract supplier ID from URL route (e.g., /suppliers/12/)
 function getSupplierIdFromUrl() {
@@ -97,42 +99,17 @@ function renderProfile(supplier) {
 
 function renderHistory(invoices) {
     const tbody = document.getElementById('historyTableBody');
-    tbody.innerHTML = '';
-
     if (!invoices || invoices.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center">No past fish supplies recorded for this vendor.</td></tr>`;
+        tbody.innerHTML = `<p class="text-center">No past fish supplies recorded for this vendor.</p>`;
         return;
     }
+    const byDay = invoices.reduce((groups, invoice) => { const day = invoice.day || String(invoice.timestamp).slice(0, 10); (groups[day] ||= []).push(invoice); return groups; }, {});
+    tbody.innerHTML = Object.entries(byDay).map(([day, entries]) => `<section class="supplier-invoice-day"><h4>${esc(new Date(`${day}T12:00:00`).toLocaleDateString('en-KE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }))}</h4><div class="supplier-invoice-cards">${entries.map(renderInvoiceCard).join('')}</div></section>`).join('');
+}
 
-    invoices.forEach(inv => {
-        const dateFormatted = new Date(inv.timestamp || inv.created_at || Date.now()).toLocaleDateString('en-US', {
-            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-        });
-
-        // Parse Stock Items
-        let itemsSummary = '—';
-        if (inv.stock_items && inv.stock_items.length > 0) {
-            itemsSummary = inv.stock_items.map(item => 
-                `${item.fish_size_name || item.fish_size}: ${parseFloat(item.weight || 0).toFixed(2)}KG`
-            ).join(', ');
-        }
-
-        const weight = parseFloat(inv.total_weight || 0).toFixed(2);
-        const cost = parseFloat(inv.total_invoice_cost || inv.total_cost || 0).toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><strong>#${inv.id}</strong></td>
-            <td>${dateFormatted}</td>
-            <td class="text-truncate" title="${itemsSummary}">${itemsSummary}</td>
-            <td><span class="badge badge-success">${weight} KG</span></td>
-            <td><strong>KES ${cost}</strong></td>
-        `;
-        tbody.appendChild(tr);
-    });
+function renderInvoiceCard(invoice) {
+    const rows = (invoice.stock_items || []).map((item) => `<tr><td>${esc(item.fish_size_name || item.fish_size)}</td><td>${esc(item.quantity)}</td><td>${Number(item.weight || 0).toFixed(2)}</td><td>${money.format(Number(item.rate || 0))}</td><td>${money.format(Number(item.total_cost || 0))}</td></tr>`).join('') || '<tr><td colspan="5">No stock items.</td></tr>';
+    return `<article class="supplier-invoice-card"><div class="supplier-invoice-meta"><span><b>ID:</b> ${esc(invoice.id)}</span><span><b>Supplier:</b> ${esc(invoice.supplier_name || invoice.supplier || currentSupplierData?.name || '—')}</span><span><b>Invoice Amount:</b> ${money.format(Number(invoice.invoice_amount || 0))}</span><span><b>Extra fees:</b> ${money.format(Number(invoice.extra_fees || 0))}</span><span><b>Invoice Total Cost:</b> ${money.format(Number(invoice.total_invoice_cost || 0))}</span></div><div class="supplier-invoice-table-wrap"><table class="supplier-invoice-table"><thead><tr><th>Size</th><th>Qty</th><th>Weight</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table></div></article>`;
 }
 
 function populateEditForm(supplier) {

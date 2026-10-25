@@ -14,14 +14,14 @@ from django.core.cache import cache
 from datetime import date
 from .models import ( User, Customer, Supplier, FishSize, 
                      Day, Sale, SaleItem, 
-                     SupplyInvoice , OutsideFrying, 
+                     SupplyInvoice, Spoilage, OutsideFrying,
                      Expense, BalancePayment, LoginAttempt,
                      SystemSetting, UserSetting
                      )
 from .serializers import(
     UserSerializer , CustomerSerializer , SupplierSerializer ,
     FishSizeSerializer , SaleSerializer , 
-    SupplyInvoiceSerializer ,DaySerializer , 
+    SupplyInvoiceSerializer, SpoilageSerializer, DaySerializer ,
     OutsideFryingItemSerializer ,  OutsideFryingBulkSerializer, 
     ExpenseSerializer,LoginAttemptSerializer,
     SystemSettingSerializer, UserSettingSerializer
@@ -287,14 +287,14 @@ class SupplierViewsSet(viewsets.ModelViewSet):
             
         ).order_by("-name")
 
-    
+
     @action( detail = True , methods = ["get"] ,   url_path = "history" )
     def get_history( self , request, pk= None  ):
         supplier = self.get_object()
         invoices = supplier.invoices.all()
         serializer = SupplyInvoiceSerializer( invoices , many = True )
         return Response( serializer.data , status = 200 )
-    
+
     @action( detail=False , methods= ["get"] , url_path= "top-analytics" )
     def top_analytics( self , request ):
         """
@@ -448,6 +448,14 @@ class SupplyInvoiceViewSet( viewsets.ModelViewSet ):
         )
 
 
+class SpoilageViewSet(viewsets.ModelViewSet):
+    """Record fish removed from inventory because it spoiled."""
+    queryset = Spoilage.objects.select_related('fish_size', 'recorded_by').all().order_by('-day_recorded', '-id')
+    serializer_class = SpoilageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ['get', 'post', 'head', 'options']
+
+
 class DayViewSet( viewsets.ModelViewSet ):
     queryset = Day.objects.all().order_by("-date")
     serializer_class = DaySerializer
@@ -482,7 +490,6 @@ class DayViewSet( viewsets.ModelViewSet ):
             } ,
             status= status.HTTP_200_OK ,
         )
-    
 
 class OutsideFryingViewSet( viewsets.ModelViewSet ):
     queryset = OutsideFrying.objects.all()
@@ -670,4 +677,3 @@ class LoginAttemptViewSet(viewsets.ModelViewSet):
             status=status.HTTP_202_ACCEPTED
         )
 
-    

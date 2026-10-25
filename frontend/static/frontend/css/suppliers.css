@@ -296,6 +296,7 @@ table td {
     height: 350px;
     position: relative;
 }
+.invoice-history-card{overflow:hidden;padding:0}.invoice-history-card .card-header{padding:1.25rem 1.5rem;margin:0;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;gap:1rem}.invoice-groups{display:grid;gap:1rem;padding:1rem}.invoice-day-group{border:1px solid var(--border-light);border-radius:10px;overflow:hidden}.invoice-day-heading{background:#eaf5ff;color:var(--ocean-blue);font-size:.9rem;font-weight:700;margin:0;padding:.7rem 1rem}.invoice-cards{display:grid;gap:.75rem;padding:.75rem}.invoice-card{border:1px solid var(--border-light);border-radius:8px;overflow:hidden}.invoice-meta{display:grid;gap:.28rem;padding:.85rem}.invoice-meta span{font-size:.86rem;color:var(--text-dark)}.invoice-meta b{color:var(--ocean-blue)}.invoice-table-wrap{overflow-x:auto}.invoice-items-table{border-collapse:collapse;min-width:560px;width:100%}.invoice-items-table th,.invoice-items-table td{border-top:1px solid var(--border-light);padding:.6rem;text-align:left;white-space:nowrap}.invoice-items-table th{background:#f8fafc;color:var(--ocean-blue);font-size:.68rem}.invoice-items-table td{font-size:.82rem}
 
 /* Modal Styling */
 .modal-overlay {

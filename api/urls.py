@@ -13,7 +13,7 @@ from . views import (
 from .views import(
     UsersViewset,
     CustomerViewSet , FishViewSet, SaleViewSet, 
-    SupplyInvoiceViewSet, DayViewSet , SupplierViewsSet , 
+    SupplyInvoiceViewSet, SpoilageViewSet, DayViewSet , SupplierViewsSet ,
     OutsideFryingViewSet, ExpenseViewSet
 ) #VIEWSETS
 
@@ -22,6 +22,7 @@ router.register(r'users',UsersViewset, basename= 'users'),
 router.register(r'customers',CustomerViewSet, basename="customers") ,
 router.register(r'suppliers',SupplierViewsSet, basename="supplier") ,
 router.register(r'supply-invoices',SupplyInvoiceViewSet)
+router.register(r'spoilages', SpoilageViewSet, basename='spoilage')
 router.register(r'sales',SaleViewSet) , 
 router.register(r'outside-frying', OutsideFryingViewSet) , 
 router.register(r'expenses', ExpenseViewSet, basename= "expenses" )

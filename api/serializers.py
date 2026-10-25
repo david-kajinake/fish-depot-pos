@@ -3,7 +3,7 @@ from django.db import transaction
 from django.utils import timezone
 from .models import ( User, Customer, Supplier,
                       FishSize, Day, Sale, SaleItem, 
-                      SupplyInvoice, FishStock, 
+                      SupplyInvoice, FishStock, Spoilage,
                       OutsideFrying, BalancePayment, 
                       Expense, LoginAttempt,
                       SystemSetting, UserSetting
@@ -87,11 +87,12 @@ class SaleSerializer(serializers.ModelSerializer):
     customer_name = serializers.CharField(required=False, allow_blank=True, write_only=True)
     customer_display_name = serializers.ReadOnlyField(source='customer.name')
     cashier = serializers.PrimaryKeyRelatedField( read_only = True )
+    cashier_display_name= serializers.ReadOnlyField(source= 'cashier.name')
     day = serializers.PrimaryKeyRelatedField( read_only = True )
     
     class Meta:
         model = Sale
-        fields = [ 'id', 'day' , 'cashier' , 'customer' , 'customer_name', 'customer_display_name', 'sale_type' , 'total_amount' , 'amount_paid_now' , 'timestamp' , 'items'  ]
+        fields = [ 'id', 'day' , 'cashier','cashier_display_name', 'customer' , 'customer_name', 'customer_display_name', 'sale_type' , 'total_amount' , 'amount_paid_now' , 'timestamp' , 'items'  ]
 
 
 class FishStockSerializer(serializers.ModelSerializer):
@@ -118,9 +119,10 @@ class SupplyInvoiceSerializer( serializers.ModelSerializer ):
         supplier_name = serializers.ReadOnlyField( source= 'supplier.name' )
         class Meta:
             model = SupplyInvoice
-            fields= ['id', 'day' , 'supplier' ,'supplier_name' , 
-                     'total_invoice_cost', 'amount_paid_to_supplier', 
-                     'timestamp', 'stock_items' , 'total_weight'
+            fields= ['id', 'day' , 'supplier' ,'supplier_name',
+                     'invoice_amount', 'extra_fees', 'total_invoice_cost',
+                     'amount_paid_to_supplier', 'timestamp', 'stock_items',
+                     'total_weight'
                      ]
             #Make the total_invoice_cost read only
             read_only_fields = ['total_invoice_cost' , 'total_weight','day']
@@ -155,6 +157,29 @@ class SupplyInvoiceSerializer( serializers.ModelSerializer ):
                     **item_data
                 )
             return invoice
+
+
+class SpoilageSerializer(serializers.ModelSerializer):
+    fish_size_name = serializers.ReadOnlyField(source='fish_size.name')
+    recorded_by_name = serializers.ReadOnlyField(source='recorded_by.name')
+    recorded_by = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = Spoilage
+        fields = ['id', 'fish_size', 'fish_size_name', 'weight', 'quantity',
+                  'recorded_by', 'recorded_by_name', 'day_recorded']
+        read_only_fields = ['id', 'recorded_by', 'day_recorded']
+
+    def validate(self, attrs):
+        fish_size = attrs['fish_size']
+        if attrs['weight'] > fish_size.current_stock_kg:
+            raise serializers.ValidationError({'weight': 'Spoilage weight cannot exceed the available stock.'})
+        if attrs['quantity'] > fish_size.current_stock_qty:
+            raise serializers.ValidationError({'quantity': 'Spoilage quantity cannot exceed the available stock.'})
+        return attrs
+
+    def create(self, validated_data):
+        return Spoilage.objects.create(recorded_by=self.context['request'].user, **validated_data)
 
 
 class SupplierSerializer( serializers.ModelSerializer ):

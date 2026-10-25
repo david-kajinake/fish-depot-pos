@@ -19,7 +19,7 @@
       <article><span>Outside Frying</span><strong id="todayOutsideFrying">KES 0.00</strong></article>
       <article><span>Weight sold</span><strong id="todayWeight">0.00 kg</strong></article>
     </div>
-    <div class="today-sales-table-wrap"><table class="sales-table"><thead><tr><th>Time</th><th>Reference</th><th>Customer</th><th>Items</th><th>Amount</th><th>Status</th></tr></thead><tbody id="todaySalesBody"><tr><td colspan="6" class="table-message">Loading today’s sales…</td></tr></tbody></table></div>
+    <div id="todaySalesBody" class="sale-card-list"><p class="table-message">Loading today’s sales…</p></div>
   </section>
   <section id="saleFormPanel" class="sale-form-panel" hidden><div class="section-heading"><div><p class="eyebrow">New transaction</p><h2>Record a sale</h2></div><button id="closeSaleForm" class="icon-close" type="button" aria-label="Close sale form">&times;</button></div>{% include 'frontend/components/sales_form_component.html' %}</section>
   <section class="history-panel"><div class="section-heading"><div><p class="eyebrow">Previous days</p><h2>Sales history</h2></div><span>Grouped by business day</span></div><div id="pastSalesGroups" class="sales-history-scroll"><p class="table-message">Loading past sales…</p></div></section>
