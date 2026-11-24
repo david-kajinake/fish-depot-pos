@@ -1,0 +1,50 @@
+{% extends 'frontend/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'frontend/css/analytics.css' %}?v={{latest}}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block page_title %}Depot Analytics{% endblock %}
+
+{% block content %}
+<section class="analytics-page">
+    <header class="analytics-hero">
+        <div>
+            <p class="analytics-eyebrow">Business intelligence</p>
+            <h1>Depot performance analytics</h1>
+            <p>Track revenue, operating costs, stock investment, and spoilage to understand each period’s profit or loss.</p>
+        </div>
+        <div class="analytics-status"><i class="fa-solid fa-chart-line"></i><span>Live operating data</span></div>
+    </header>
+
+    <section class="analytics-kpis" aria-label="All-time performance summary">
+        <article class="analytics-kpi revenue"><span>Sales revenue</span><strong id="analyticsSales">KES 0.00</strong><i class="fa-solid fa-arrow-trend-up"></i></article>
+        <article class="analytics-kpi expenses"><span>Operating expenses</span><strong id="analyticsExpenses">KES 0.00</strong><i class="fa-solid fa-receipt"></i></article>
+        <article class="analytics-kpi supply"><span>Stock supply cost</span><strong id="analyticsSupplies">KES 0.00</strong><i class="fa-solid fa-boxes-stacked"></i></article>
+        <article class="analytics-kpi spoilage"><span>Estimated spoilage loss</span><strong id="analyticsSpoilageValue">KES 0.00</strong><small id="analyticsSpoilageWeight">0.00 kg spoiled</small></article>
+        <article class="analytics-kpi net"><span>Net profit / loss</span><strong id="analyticsNet">KES 0.00</strong><small id="analyticsNetLabel">Loading…</small></article>
+    </section>
+
+    <section class="analytics-card performance-card">
+        <div class="analytics-card-header">
+            <div><p class="analytics-eyebrow">Period performance</p><h2>Profit and loss trend</h2><p>Sales less operating expenses, stock supply costs, and estimated spoilage loss.</p></div>
+            <div class="analytics-tabs" role="tablist"><button class="analytics-tab active" data-period="daily">Daily</button><button class="analytics-tab" data-period="weekly">Weekly</button><button class="analytics-tab" data-period="monthly">Monthly</button><button class="analytics-tab" data-period="yearly">Yearly</button></div>
+        </div>
+        <div class="analytics-chart-wrap"><canvas id="profitLossChart"></canvas></div>
+    </section>
+
+    <section class="analytics-charts-grid">
+        <article class="analytics-card"><div class="analytics-card-header compact"><div><p class="analytics-eyebrow">Cost comparison</p><h2>Revenue against costs</h2></div></div><div class="analytics-chart-wrap small"><canvas id="operationsChart"></canvas></div></article>
+        <article class="analytics-card"><div class="analytics-card-header compact"><div><p class="analytics-eyebrow">Inventory loss</p><h2>Spoilage volume</h2><p id="spoilageCostNote"></p></div></div><div class="analytics-chart-wrap small"><canvas id="spoilageChart"></canvas></div></article>
+    </section>
+
+    <section class="analytics-card ledger-card">
+        <div class="analytics-card-header"><div><p class="analytics-eyebrow">Detailed ledger</p><h2 id="ledgerTitle">Daily financial summary</h2><p>Each period combines sales, expenses, stock supplies, and spoilage.</p></div></div>
+        <div class="analytics-table-scroll"><table class="analytics-table"><thead><tr><th>Period</th><th>Sales</th><th>Expenses</th><th>Stock supplies</th><th>Spoilage</th><th>Est. spoilage loss</th><th>Net profit / loss</th></tr></thead><tbody id="analyticsLedgerBody"><tr><td colspan="7">Loading analytics…</td></tr></tbody></table></div>
+    </section>
+</section>
+{% endblock %}
+
+{% block extra_js %}<script type="module" src="{% static 'frontend/js/analytics.js' %}?v={{latest}}"></script>{% endblock %}

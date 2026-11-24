@@ -18,6 +18,9 @@ def sales(request):
 def inventory(request):
     return render(request, 'frontend/inventory.html')
 
+def analytics(request):
+    return render(request, 'frontend/analytics.html')
+
 def expenses(request):
     return render(request, 'frontend/expenses.html')
 

@@ -1,5 +1,6 @@
 from django.shortcuts import render
 import time
+from collections import defaultdict
 
 from rest_framework.views import APIView
 from rest_framework import permissions, viewsets , status
@@ -80,6 +81,74 @@ class TaskStatusView(APIView):
             response= {"state": result.state, "status": str(result.info)}
 
         return Response( response, status= status.HTTP_200_OK )
+
+
+class AnalyticsView(APIView):
+    """Depot-wide financial and inventory-loss analytics."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        daily = defaultdict(lambda: {
+            'sales': Decimal('0.00'), 'expenses': Decimal('0.00'),
+            'supplies': Decimal('0.00'), 'spoilage_weight': Decimal('0.00'),
+            'spoilage_value': Decimal('0.00'),
+        })
+
+        for sale in Sale.objects.select_related('day').only('total_amount', 'day__date'):
+            daily[sale.day.date]['sales'] += sale.total_amount
+        for expense in Expense.objects.select_related('day').only('amount', 'day__date'):
+            daily[expense.day.date]['expenses'] += expense.amount
+        for invoice in SupplyInvoice.objects.select_related('day').only('total_invoice_cost', 'day__date'):
+            daily[invoice.day.date]['supplies'] += invoice.total_invoice_cost
+        for spoilage in Spoilage.objects.select_related('fish_size').only('day_recorded', 'weight', 'fish_size__buying_price_per_kg'):
+            bucket = daily[spoilage.day_recorded]
+            bucket['spoilage_weight'] += spoilage.weight
+            # Spoilage records do not retain a historical unit cost, so use the
+            # configured buying price for that fish size as an estimated loss.
+            bucket['spoilage_value'] += spoilage.weight * spoilage.fish_size.buying_price_per_kg
+
+        def create_bucket():
+            return {
+                'sales': Decimal('0.00'), 'expenses': Decimal('0.00'),
+                'supplies': Decimal('0.00'), 'spoilage_weight': Decimal('0.00'),
+                'spoilage_value': Decimal('0.00'),
+            }
+
+        def add_to_periods(label_fn):
+            periods = defaultdict(create_bucket)
+            for day, values in daily.items():
+                target = periods[label_fn(day)]
+                for key, value in values.items():
+                    target[key] += value
+            return [serialize(label, values) for label, values in sorted(periods.items())]
+
+        def serialize(label, values):
+            net = values['sales'] - values['expenses'] - values['supplies'] - values['spoilage_value']
+            return {
+                'label': str(label),
+                **{key: float(value) for key, value in values.items()},
+                'net_profit_loss': float(net),
+            }
+
+        daily_rows = [serialize(day, values) for day, values in sorted(daily.items())]
+        weekly_rows = add_to_periods(lambda day: day - timedelta(days=day.weekday()))
+        monthly_rows = add_to_periods(lambda day: day.replace(day=1))
+        yearly_rows = add_to_periods(lambda day: date(day.year, 1, 1))
+        totals = create_bucket()
+        for values in daily.values():
+            for key, value in values.items():
+                totals[key] += value
+
+        return Response({
+            'totals': serialize('All time', totals),
+            'periods': {
+                'daily': daily_rows,
+                'weekly': weekly_rows,
+                'monthly': monthly_rows,
+                'yearly': yearly_rows,
+            },
+            'spoilage_cost_note': 'Spoilage cost is estimated from each fish size’s current buying price.',
+        })
 
 
 

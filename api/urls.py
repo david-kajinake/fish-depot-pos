@@ -6,7 +6,7 @@ from rest_framework_simplejwt.views import (
 )
 from django.contrib.auth.views import LogoutView
 from . views import (  
-              TaskStatusView, UnifiedLoginView, JwtLogoutView, 
+              TaskStatusView, AnalyticsView, UnifiedLoginView, JwtLogoutView,
               CurrentUserView, SystemSettingView, 
               UserSettingView, UserProfileUpdateView, LoginAttemptViewSet
                      ) #API VIEWS
@@ -33,6 +33,7 @@ router.register(r'login-attempts', LoginAttemptViewSet, basename='login-attempts
 
 urlpatterns = [
     path('',include(router.urls)),    
+    path('analytics/', AnalyticsView.as_view(), name='api_analytics'),
     # SimpleJWT Authentication Endpoints
     path('auth/login/', UnifiedLoginView.as_view(), name='token_obtain_pair'),
     path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
