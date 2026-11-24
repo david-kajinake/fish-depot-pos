@@ -172,6 +172,44 @@ class CustomerViewSet( viewsets.ModelViewSet ):
         sales = Sale.objects.filter(customer=self.get_object()).order_by('-timestamp')
         return Response(SaleSerializer(sales, many=True).data)
 
+    @action(detail=True, methods=['get'], url_path='debt-history')
+    def debt_history(self, request, pk=None):
+        """Return one debt-ledger row for each customer sale or balance-payment date."""
+        customer = self.get_object()
+        events = []
+
+        for sale in Sale.objects.filter(customer=customer).only('timestamp', 'total_amount', 'amount_paid_now'):
+            events.append((sale.timestamp, 'sale', sale))
+        for payment in BalancePayment.objects.filter(customer=customer).only('timestamp', 'amount'):
+            events.append((payment.timestamp, 'payment', payment))
+
+        # Payments and sales are both applied in their recorded order, including
+        # payment-only days so every debt reduction remains auditable.
+        events.sort(key=lambda event: event[0])
+        balance = Decimal('0.00')
+        history_by_day = {}
+        for timestamp, event_type, event in events:
+            day = timezone.localtime(timestamp).date().isoformat()
+            row = history_by_day.setdefault(day, {
+                'date': day,
+                'then_balance': balance,
+                'sale_amount': Decimal('0.00'),
+                'amount_paid': Decimal('0.00'),
+                'remaining_balance': balance,
+            })
+            if event_type == 'payment':
+                row['amount_paid'] += event.amount
+                balance -= event.amount
+                row['remaining_balance'] = balance
+                continue
+
+            row['sale_amount'] += event.total_amount
+            row['amount_paid'] += event.amount_paid_now
+            balance += event.total_amount - event.amount_paid_now
+            row['remaining_balance'] = balance
+
+        return Response(list(history_by_day.values()))
+
     @action(detail=True, methods=['post'], url_path='record-balance-payment', permission_classes= [Custom_permissions.CanRecordCustomerBalanceDebt,])
     def record_balance_payment(self, request, pk=None):
         customer = self.get_object()

@@ -61,20 +61,27 @@ function configureRoleUi(user) {
 }
 
 function bindTabs() {
+    const showTab = (targetId) => {
+        const targetButton = document.querySelector(`.tab-btn[data-target="${targetId}"]`);
+        const targetPane = document.getElementById(targetId);
+        if (!targetButton || !targetPane) return;
+        document.querySelectorAll('.tab-btn').forEach((button) => button.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach((pane) => {
+            pane.classList.remove('active');
+            pane.hidden = true;
+        });
+        targetButton.classList.add('active');
+        targetPane.hidden = false;
+        targetPane.classList.add('active');
+    };
+
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-            
-            e.currentTarget.classList.add('active');
-            const targetId = e.currentTarget.getAttribute('data-target');
-            const targetPane = document.getElementById(targetId);
-            if (targetPane) {
-                targetPane.hidden = false;
-                targetPane.classList.add('active');
-            }
+            showTab(e.currentTarget.getAttribute('data-target'));
         });
     });
+
+    if (new URLSearchParams(window.location.search).get('tab') === 'profile') showTab('profile-tab');
 }
 
 function bindToggles() {

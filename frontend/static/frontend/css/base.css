@@ -140,6 +140,13 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+    color: var(--text-light);
+    text-decoration: none;
+}
+
+.user-info:hover,
+.user-info:focus-visible {
+    color: var(--coral);
 }
 
 /* --- ACCENT BUTTONS (Coral) --- */

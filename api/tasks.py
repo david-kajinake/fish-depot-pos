@@ -8,6 +8,7 @@ from api.utils.generate_statement import StatementGenerator
 from api.utils.updates import Update
 
 
+
 def _send_statement(email, subject, filename, pdf_stream):
     message = EmailMessage(subject=subject, body='Please find the requested statement attached.', to=[email])
     message.attach(filename, pdf_stream.read(), 'application/pdf')
@@ -47,7 +48,7 @@ def generate_and_email_sales_statement(recipient_email, start_date=None, end_dat
 
 
 @shared_task
-def generate_and_email_single_expense_statement(expense_name, recipient_email, start_date=None, end_date=None, generated_by=None):
+def genrate_and_email_single_expense_statement(expense_name, recipient_email, start_date=None, end_date=None, generated_by=None):
     pdf = StatementGenerator(generated_by=generated_by).generate_single_expenses_statement(expense_name, start_date, end_date)
     return _send_statement(recipient_email, f'Fresh Victoria Fish - Expense Statement: {expense_name}', f'{expense_name}-expense-statement.pdf', pdf)
 

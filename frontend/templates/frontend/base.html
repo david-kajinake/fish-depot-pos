@@ -44,10 +44,10 @@
                     <h3 class="page-title">{% block page_title %}Dashboard{% endblock %}</h3>
                 </div>
                 <div class="header-right">
-                    <span class="user-info">
+                    <a class="user-info" href="{% url 'settings' %}?tab=profile" aria-label="Open your profile">
                         <i class="fa-solid fa-circle-user"></i> 
                         <span id="current-user-name">Loading…</span>
-                    </span>
+                    </a>
                     <button id="logout-btn" class="btn-accent">
                         <i class="fa-solid fa-right-from-bracket"></i> Logout
                     </button>

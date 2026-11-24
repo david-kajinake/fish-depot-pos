@@ -15,9 +15,12 @@ function bind() {
     cancelDetailPayment.onclick = () => detailPaymentPanel.hidden = true;
     showCustomerStatement.onclick = () => customerStatementModal.hidden = false;
     closeCustomerStatement.onclick = cancelCustomerStatement.onclick = () => customerStatementModal.hidden = true;
+    showDebtStatement.onclick = () => customerDebtStatementModal.hidden = false;
+    closeDebtStatement.onclick = cancelDebtStatement.onclick = () => customerDebtStatementModal.hidden = true;
     customerEditForm.onsubmit = save;
     detailPaymentForm.onsubmit = pay;
     sendCustomerStatementForm.onsubmit = sendStatement;
+    sendCustomerDebtStatementForm.onsubmit = sendDebtStatement;
     detailMessageForm.onsubmit = (event) => {
         event.preventDefault();
         alert(`Customer message prepared for ${detailMessageChannel.value.toUpperCase()}. Delivery integration is not connected yet.`);
@@ -26,19 +29,21 @@ function bind() {
 
 async function load() {
     try {
-        const [customerResponse, historyResponse] = await Promise.all([
-            apiFetch(`/api/customers/${customerId}/`), apiFetch(`/api/customers/${customerId}/history/`)
+        const [customerResponse, historyResponse, debtHistoryResponse] = await Promise.all([
+            apiFetch(`/api/customers/${customerId}/`),
+            apiFetch(`/api/customers/${customerId}/history/`),
+            apiFetch(`/api/customers/${customerId}/debt-history/`)
         ]);
-        if (!customerResponse.ok || !historyResponse.ok) throw new Error('Customer not found.');
+        if (!customerResponse.ok || !historyResponse.ok || !debtHistoryResponse.ok) throw new Error('Customer not found.');
         customer = await customerResponse.json();
-        render(await historyResponse.json());
+        render(await historyResponse.json(), await debtHistoryResponse.json());
     } catch (error) {
         console.error(error);
         window.location.assign('/customers/');
     }
 }
 
-function render(history) {
+function render(history, debtHistory) {
     detailCustomerName.textContent = customer.name;
     customerAvatar.textContent = customer.name.charAt(0).toUpperCase();
     detailStatus.textContent = customer.active_60_days ? 'Active' : 'Inactive';
@@ -58,6 +63,10 @@ function render(history) {
         return groups;
     }, {});
     customerHistoryBody.innerHTML = history.length ? Object.entries(byDay).map(([day, sales]) => `<section class="customer-sale-day"><h3>${esc(new Date(`${day}T12:00:00`).toLocaleDateString('en-KE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }))}</h3><div class="customer-sale-cards">${sales.map(renderSaleCard).join('')}</div></section>`).join('') : '<p class="customer-empty">No sales recorded.</p>';
+    customerDebtHistoryBody.innerHTML = debtHistory.length ? debtHistory.map((entry) => {
+        const saleAmount = Number(entry.sale_amount || 0);
+        return `<tr><td>${esc(new Date(`${entry.date}T12:00:00`).toLocaleDateString('en-KE', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }))}</td><td>${money.format(Number(entry.then_balance || 0))}</td><td>${saleAmount ? money.format(saleAmount) : '—'}</td><td>${money.format(Number(entry.amount_paid || 0))}</td><td>${money.format(Number(entry.remaining_balance || 0))}</td></tr>`;
+    }).join('') : '<tr><td colspan="5" class="customer-empty">No customer debt activity.</td></tr>';
 }
 
 function renderSaleCard(sale) {
@@ -120,6 +129,35 @@ async function sendStatement(event) {
         customerStatementPassword.value = '';
         alert('Statement successfully generated and emailed!');
 
+    } catch (error) {
+        alert(error.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+}
+
+async function sendDebtStatement(event) {
+    event.preventDefault();
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Sending...';
+        const response = await apiFetch(`/api/customers/${customerId}/send-statement/`, {
+            method: 'POST',
+            body: JSON.stringify({
+                email: customerDebtStatementEmail.value.trim(),
+                password: customerDebtStatementPassword.value,
+            }),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.password || error.email || 'Could not send debt statement.');
+        }
+        customerDebtStatementModal.hidden = true;
+        customerDebtStatementPassword.value = '';
+        alert('Debt balance statement sent successfully.');
     } catch (error) {
         alert(error.message);
     } finally {

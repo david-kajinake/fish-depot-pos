@@ -128,25 +128,41 @@ class StatementGenerator:
         story.append(self._generated_by_paragraph(styles))
         story.append(Spacer(1, 14))
 
-        # 3. Statement Ledger Table
-        headers = ['Date', 'Reference', 'Sale amount', 'Amount paid', 'Balance']
+        # 3. One row for each date with a customer sale or a balance payment.
+        headers = ['Date', 'Then balance', 'Sale amount', 'Amount paid', 'Balance left']
         table_data = [headers]
 
         running_balance = opening_balance
+        daily_rows = {}
         if not events:
-            table_data.append(['-', 'No sales or balance payments recorded', 'KES 0.00', 'KES 0.00', self._money(current_balance)])
+            table_data.append(['-', 'KES 0.00', 'KES 0.00', 'KES 0.00', self._money(current_balance)])
         else:
             for event in events:
+                day = event['timestamp'].astimezone().date()
+                is_sale = event['reference'].startswith('Sale #')
+                row = daily_rows.setdefault(day, {
+                    'then_balance': running_balance,
+                    'sale_amount': Decimal('0.00'),
+                    'amount_paid': Decimal('0.00'),
+                    'remaining_balance': running_balance,
+                })
+                if is_sale:
+                    row['sale_amount'] += event['sale_amount']
+                row['amount_paid'] += event['paid_amount']
+
                 running_balance += event['sale_amount'] - event['paid_amount']
+                row['remaining_balance'] = running_balance
+
+            for day, row in daily_rows.items():
                 table_data.append([
-                    event['timestamp'].astimezone().strftime('%d %b %Y %H:%M'),
-                    event['reference'],
-                    self._money(event['sale_amount']),
-                    self._money(event['paid_amount']),
-                    self._money(running_balance)
+                    day.strftime('%d %b %Y'),
+                    self._money(row['then_balance']),
+                    self._money(row['sale_amount']) if row['sale_amount'] else '—',
+                    self._money(row['amount_paid']),
+                    self._money(row['remaining_balance']),
                 ])
 
-        col_widths = [110, 140, 85, 85, 91.27]
+        col_widths = [85, 105, 105, 105, 110]
         statement_table = Table(table_data, colWidths=col_widths, repeatRows=1)
         statement_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#edf8ff')),
