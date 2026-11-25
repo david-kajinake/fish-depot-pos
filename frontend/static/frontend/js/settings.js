@@ -99,7 +99,16 @@ function bindToggles() {
         if (checkbox && section) {
             checkbox.addEventListener('change', (e) => {
                 section.hidden = !e.target.checked;
+                if (checkboxId === 'statement_auto_send') {
+                    document.querySelector('[name="statement_time"]').required = e.target.checked;
+                }
+                if (checkboxId === 'auto_close_day') {
+                    document.querySelector('[name="auto_close_time"]').required = e.target.checked;
+                }
             });
+
+            // Hidden controls must never block native form validation.
+            checkbox.dispatchEvent(new Event('change'));
         }
     }
 
@@ -517,6 +526,12 @@ async function saveSystemSettings(e) {
         data[key] = !!data[key];
     });
 
+    // DRF's nullable TimeField accepts null, but rejects the empty string that
+    // FormData produces for an unused time input.
+    ['statement_time', 'auto_close_time'].forEach((key) => {
+        if (!data[key]) data[key] = null;
+    });
+
     data.statement_contacts = systemSettingsState.statement_contacts;
     data.login_alert_contacts = systemSettingsState.login_alert_contacts;
     data.receipt_selected_customers = systemSettingsState.receipt_selected_customers;
@@ -532,7 +547,10 @@ async function saveSystemSettings(e) {
         if (!res.ok) throw await res.json();
         alert('System settings updated successfully.');
     } catch (err) {
-        alert('Error saving system settings.');
+        const message = Object.entries(err || {})
+            .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors.join(', ') : errors}`)
+            .join('\n');
+        alert(`Could not save automation settings.${message ? `\n${message}` : ''}`);
     } finally {
         btn.innerHTML = 'Save Automation Settings';
         btn.disabled = false;

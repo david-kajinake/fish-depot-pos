@@ -1,10 +1,12 @@
 from rest_framework.permissions import BasePermission
-from .models import User
+from .models import User, SystemSetting
 """
 Admins and Super users can override these permissions. ( they are granted all permissions )
 """
 class CanCallItADay(BasePermission):
     def has_permission(self, request, view):
+        if SystemSetting.load().auto_close_day:
+            return bool(request.user and (request.user.role == User.ADMIN or request.user.is_staff or request.user.is_superuser))
         is_admin_or_superuser = request.user.role == 'ADMIN' or request.user.role == 'MANAGER' or request.user.is_superuser
         has_been_granted_permission = request.user and request.user.can_call_it_a_day
         return is_admin_or_superuser or has_been_granted_permission

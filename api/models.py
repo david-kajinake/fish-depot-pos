@@ -286,8 +286,18 @@ class SystemSetting(models.Model):
         choices=[('all', 'All Customers'), ('selected', 'Selected Customers')],
         default='all'
     )
+    receipt_selected_customers = models.JSONField(default=list)
 
-    # Automation II: Full-Day Statement
+    # Automation II: Auto Bill
+    bill_auto_send = models.BooleanField(default=False)
+    bill_target = models.CharField(
+        max_length=20,
+        choices=[('all', 'All Customers'), ('selected', 'Selected Customers')],
+        default='all'
+    )
+    bill_selected_customers = models.JSONField(default=list)
+
+    # Automation III: Full-Day Statement
     statement_auto_send = models.BooleanField(default=False)
     statement_method = models.CharField(
         max_length=20,
@@ -296,6 +306,7 @@ class SystemSetting(models.Model):
     )
     statement_contacts = models.JSONField(default=list, help_text="List of emails or phone numbers")
     statement_time = models.TimeField(null=True, blank=True)
+    last_statement_dispatch_date = models.DateField(null=True, blank=True, editable=False)
 
     # Automation III: Suspicious Login Alert (Always ON)
     login_alert_method = models.CharField(
@@ -308,6 +319,7 @@ class SystemSetting(models.Model):
     # Automation IV: Call it a day
     auto_close_day = models.BooleanField(default=False)
     auto_close_time = models.TimeField(null=True, blank=True)
+    last_auto_close_date = models.DateField(null=True, blank=True, editable=False)
     low_stock_threshold = models.DecimalField(max_digits=10, decimal_places=2, default=10.00, help_text="Kg threshold for low stock warnings")
 
     def save(self, *args, **kwargs):

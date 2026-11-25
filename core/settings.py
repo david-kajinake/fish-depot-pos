@@ -153,4 +153,10 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULE = {
+    'run-depot-scheduled-automations': {
+        'task': 'api.tasks.run_scheduled_automations',
+        'schedule': 60.0,
+    },
+}
 

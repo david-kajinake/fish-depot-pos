@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.db import transaction
 from django.utils import timezone
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError as DjangoValidationError
 from .models import ( User, Customer, Supplier,
                       FishSize, Day, Sale, SaleItem, 
                       SupplyInvoice, FishStock, Spoilage,
@@ -250,6 +252,33 @@ class SystemSettingSerializer(serializers.ModelSerializer):
     class Meta:
         model = SystemSetting
         fields = '__all__'
+
+    def validate(self, attrs):
+        instance = getattr(self, 'instance', None)
+        def value(name):
+            return attrs.get(name, getattr(instance, name, None))
+
+        for prefix in ('receipt', 'bill'):
+            if value(f'{prefix}_auto_send') and value(f'{prefix}_target') == 'selected' and not value(f'{prefix}_selected_customers'):
+                raise serializers.ValidationError({f'{prefix}_selected_customers': 'Choose at least one customer when using the selected-customer audience.'})
+        if value('statement_auto_send'):
+            if value('statement_method') != 'email':
+                raise serializers.ValidationError({'statement_method': 'Automated daily statements currently support email delivery only.'})
+            if not value('statement_time'):
+                raise serializers.ValidationError({'statement_time': 'Choose a dispatch time for automated statements.'})
+            if not value('statement_contacts'):
+                raise serializers.ValidationError({'statement_contacts': 'Add at least one email recipient for automated statements.'})
+            invalid_contacts = []
+            for contact in value('statement_contacts'):
+                try:
+                    validate_email(str(contact).strip())
+                except DjangoValidationError:
+                    invalid_contacts.append(str(contact))
+            if invalid_contacts:
+                raise serializers.ValidationError({'statement_contacts': f'Use valid email addresses. Invalid: {", ".join(invalid_contacts)}'})
+        if value('auto_close_day') and not value('auto_close_time'):
+            raise serializers.ValidationError({'auto_close_time': 'Choose an automatic closing time.'})
+        return attrs
 
 class UserSettingSerializer(serializers.ModelSerializer):
     class Meta:

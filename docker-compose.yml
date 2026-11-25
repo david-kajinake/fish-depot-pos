@@ -39,3 +39,15 @@ services:
     dns:
       - 8.8.8.8
       - 8.8.4.4
+
+  celery-beat:
+    build: .
+    container_name: fish_celery_beat
+    command: celery -A core beat --loglevel=info
+    volumes:
+      - .:/app
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis

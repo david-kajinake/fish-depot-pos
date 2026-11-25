@@ -198,6 +198,53 @@ class StatementGenerator:
             })
         return sorted(events, key=lambda event: (event['timestamp'], event['reference']))
 
+    def generate_full_day_statement(self, day, lines):
+        """Create the scheduled full-day operational summary as a PDF."""
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=self.margin, rightMargin=self.margin, topMargin=self.margin, bottomMargin=self.margin)
+        styles = getSampleStyleSheet()
+        usable = self.page_width - 2 * self.margin
+        title = ParagraphStyle('full-day-title', parent=styles['Title'], textColor=colors.HexColor('#00509e'))
+        story = [Paragraph('Fresh Victoria Fish — Full-Day Statement', title), Spacer(1, 8), Paragraph(f'<b>Business date:</b> {day.date}', styles['BodyText']), Spacer(1, 12)]
+        rows = [['Metric', 'Value']]
+        for line in lines[1:]:
+            metric, value = line.split(': ', 1)
+            rows.append([metric, value])
+        table = Table(rows, colWidths=[usable * .58, usable * .42], repeatRows=1)
+        table.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#00509e')), ('TEXTCOLOR', (0, 0), (-1, 0), colors.white), ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'), ('GRID', (0, 0), (-1, -1), .35, colors.HexColor('#d8e8f2')), ('TOPPADDING', (0, 0), (-1, -1), 7), ('BOTTOMPADDING', (0, 0), (-1, -1), 7), ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f7fbfd'))]))
+        story.extend([table, Spacer(1, 12), self._generated_by_paragraph(styles)])
+        doc.build(story)
+        buffer.seek(0)
+        return buffer
+
+    def generate_sale_bill(self, sale):
+        """Create a customer bill with sale and outstanding-debt totals."""
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=self.margin, rightMargin=self.margin, topMargin=self.margin, bottomMargin=self.margin)
+        styles = getSampleStyleSheet()
+        usable = self.page_width - 2 * self.margin
+        title = ParagraphStyle('bill-title', parent=styles['Title'], textColor=colors.HexColor('#00509e'))
+        story = [Paragraph('Fresh Victoria Fish — Customer Bill', title), Spacer(1, 8)]
+        customer_name = sale.customer.name if sale.customer else 'Walk-in customer'
+        meta = [[f'Date: {sale.timestamp.astimezone():%d %b %Y %H:%M}'], [f'Customer: {customer_name}']]
+        story.append(Table(meta, colWidths=[usable], style=[('BOX', (0, 0), (-1, -1), .5, colors.HexColor('#d8e8f2')), ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f7fbfd')), ('LEFTPADDING', (0, 0), (-1, -1), 8), ('TOPPADDING', (0, 0), (-1, -1), 5), ('BOTTOMPADDING', (0, 0), (-1, -1), 5)]))
+        story.append(Spacer(1, 12))
+        rows = [['Fish size', 'Qty', 'Weight', 'Fish amount', 'Fried?', 'Frying fee', 'Line total']]
+        for item in sale.items.select_related('fish_size').all():
+            fish_amount = item.weight * item.rate_charged
+            rows.append([item.fish_size.name, item.quantity, f'{item.weight:.2f} kg', self._money(fish_amount), 'Yes' if item.is_fried else 'No', self._money(item.frying_fee_applied), self._money(fish_amount + item.frying_fee_applied)])
+        item_table = Table(rows, colWidths=[usable / 7] * 7, repeatRows=1)
+        item_table.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#00509e')), ('TEXTCOLOR', (0, 0), (-1, 0), colors.white), ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'), ('FONTSIZE', (0, 0), (-1, -1), 7), ('GRID', (0, 0), (-1, -1), .35, colors.HexColor('#d8e8f2')), ('TOPPADDING', (0, 0), (-1, -1), 5), ('BOTTOMPADDING', (0, 0), (-1, -1), 5)]))
+        story.extend([item_table, Spacer(1, 12)])
+        debt = sale.customer.debt_balance if sale.customer else Decimal('0.00')
+        totals = [['Sale total', self._money(sale.total_amount)], ['Balance debt', self._money(debt)], ['Overall amount due', self._money(sale.total_amount + debt)]]
+        total_table = Table(totals, colWidths=[usable * .65, usable * .35], hAlign='RIGHT')
+        total_table.setStyle(TableStyle([('BACKGROUND', (0, 2), (-1, 2), colors.HexColor('#e7f5ef')), ('FONTNAME', (0, 2), (-1, 2), 'Helvetica-Bold'), ('GRID', (0, 0), (-1, -1), .35, colors.HexColor('#d8e8f2')), ('ALIGN', (1, 0), (1, -1), 'RIGHT'), ('TOPPADDING', (0, 0), (-1, -1), 6), ('BOTTOMPADDING', (0, 0), (-1, -1), 6)]))
+        story.extend([total_table, Spacer(1, 12), self._generated_by_paragraph(styles)])
+        doc.build(story)
+        buffer.seek(0)
+        return buffer
+
     @staticmethod
     def _money(value):
         return f'KES {Decimal(value):,.2f}'

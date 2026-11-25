@@ -449,13 +449,12 @@ class SaleViewSet(viewsets.ModelViewSet):
    """
     Creates a sale and its nested items from the submitted cart JSON.
    """
-   permission_classes = [permissions.AllowAny]
+   permission_classes = [Custom_permissions.canRecordSale]
    queryset =Sale.objects.all().order_by("-timestamp")
    serializer_class = SaleSerializer
 
    @transaction.atomic
    def perform_create(self, serializer):
-       self.permission_classes= [Custom_permissions.canRecordSale]
        """Create a validated sale while protecting totals, stock, and debt balances."""
        validated_data = serializer.validated_data.copy()
        items_data = validated_data.pop('items')
@@ -519,6 +518,9 @@ class SaleViewSet(viewsets.ModelViewSet):
            sale.customer.debt_balance = Decimal(sale.customer.debt_balance) + (calculated_total - amount_paid)
            sale.customer.save(update_fields=['debt_balance'])
        serializer.instance = sale
+       if sale.customer_id:
+           transaction.on_commit(lambda sale_id=sale.id: tasks.send_automated_receipt.delay(sale_id))
+           transaction.on_commit(lambda sale_id=sale.id: tasks.send_automated_bill.delay(sale_id))
 
    @action(detail= False, methods= ['get'], url_path= 'today')
    def get_today_sales(self, request, pk= None):
@@ -654,7 +656,7 @@ class ExpenseViewSet(viewsets.ModelViewSet):
 
 class SystemSettingView(APIView):
     """GET/PUT for the global system settings. Admin only."""
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [Custom_permissions.CanManageUsers]
 
     def get(self, request):
         setting = SystemSetting.load()
