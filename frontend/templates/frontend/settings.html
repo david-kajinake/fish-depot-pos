@@ -331,7 +331,7 @@
                             <div class="form-group"><label>Temporary password <input name="password" type="password" minlength="8" required autocomplete="new-password"></label></div>
                         </div>
                         <fieldset class="create-user-permissions"><legend>Starting permissions</legend>
-                            <label><input type="checkbox" name="can_call_it_a_day"> Call it a day</label><label><input type="checkbox" name="can_record_sale" checked> Record sales</label><label><input type="checkbox" name="can_record_stock_supply"> Record stock supplies</label><label><input type="checkbox" name="can_record_expenses"> Record expenses</label><label><input type="checkbox" name="can_record_customer_balance_debt_payment"> Record balance payments</label><label><input type="checkbox" name="can_send_messages_to_customers"> Send customer messages</label><label><input type="checkbox" name="can_edit_customers_info"> Edit customer details</label><label><input type="checkbox" name="can_edit_suppliers_info"> Edit supplier details</label><label><input type="checkbox" name="can_generate_statements"> Generate statements</label>
+                            <label><input type="checkbox" name="can_call_it_a_day"> Call it a day</label><label><input type="checkbox" name="can_record_sale" checked> Record sales</label><label><input type="checkbox" name="can_record_stock_supply"> Record stock supplies</label><label><input type="checkbox" name="can_modify_fish_size"> Modify fish sizes</label><label><input type="checkbox" name="can_record_expenses"> Record expenses</label><label><input type="checkbox" name="can_record_customer_balance_debt_payment"> Record balance payments</label><label><input type="checkbox" name="can_send_messages_to_customers"> Send customer messages</label><label><input type="checkbox" name="can_edit_customers_info"> Edit customer details</label><label><input type="checkbox" name="can_edit_suppliers_info"> Edit supplier details</label><label><input type="checkbox" name="can_generate_statements"> Generate statements</label>
                         </fieldset>
                         <div class="form-actions-bar"><output id="createUserStatus"></output><button type="submit" class="btn-primary">Create user</button></div>
                     </form>
@@ -385,6 +385,7 @@
                                     <th>Call Day</th>
                                     <th>Sales</th>
                                     <th>Supply</th>
+                                    <th>Fish Sizes</th>
                                     <th>Expenses</th>
                                     <th>Debts</th>
                                     <th>SMS/WA</th>
@@ -394,7 +395,7 @@
                                 </tr>
                             </thead>
                             <tbody id="permissionsMatrixBody">
-                                <tr><td colspan="10" class="empty-state">Loading permissions matrix...</td></tr>
+                                <tr><td colspan="11" class="empty-state">Loading permissions matrix...</td></tr>
                             </tbody>
                         </table>
                     </div>

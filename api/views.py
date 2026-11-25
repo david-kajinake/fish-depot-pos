@@ -32,6 +32,7 @@ from . import tasks
 from celery.result import AsyncResult
 from django.db.models import Sum, Value, DecimalField, OuterRef, Exists, Subquery
 from django.db import transaction
+from django.db.models.deletion import ProtectedError
 from django.utils import timezone
 from datetime import timedelta
 from decimal import Decimal
@@ -443,6 +444,22 @@ class SupplierViewsSet(viewsets.ModelViewSet):
 class FishViewSet( viewsets.ModelViewSet ):
     queryset = FishSize.objects.all()
     serializer_class = FishSizeSerializer
+
+    def get_permissions(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return [permissions.IsAuthenticated()]
+        return [Custom_permissions.CanModifyFishSize()]
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        try:
+            self.perform_destroy(instance)
+        except ProtectedError:
+            return Response(
+                {'detail': 'This fish size cannot be deleted because sales or spoilage records use it. Edit it instead to preserve history.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class SaleViewSet(viewsets.ModelViewSet):

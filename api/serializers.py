@@ -19,7 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [ "id" , "username" , "name" , 
                   "role" , "phone" , "email", 
                   "is_staff", "is_superuser", 'can_call_it_a_day', 
-                  'can_record_sale', 'can_record_stock_supply',
+                  'can_record_sale', 'can_record_stock_supply', 'can_modify_fish_size',
                   'can_record_expenses', 'can_record_customer_balance_debt_payment',
                   'can_send_messages_to_customers', 'can_edit_customers_info',
                   'can_edit_suppliers_info', 'can_generate_statements',
@@ -67,9 +67,17 @@ class BalancePaymentSerializer(serializers.ModelSerializer):
 
         
 class FishSizeSerializer( serializers.ModelSerializer ):
+    def validate(self, attrs):
+        for field in ('current_stock_kg', 'current_stock_qty', 'buying_price_per_kg', 'retail_price_per_kg', 'wholesale_price_per_kg', 'frying_fee'):
+            value = attrs.get(field)
+            if value is not None and value < 0:
+                raise serializers.ValidationError({field: 'Enter zero or a positive value.'})
+        return attrs
+
     class Meta:
         model = FishSize
         fields = "__all__"
+        read_only_fields = ['id']
 
 
 

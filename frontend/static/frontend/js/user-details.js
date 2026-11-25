@@ -4,6 +4,7 @@ const permissions = [
     ['can_call_it_a_day', 'Call it a day'],
     ['can_record_sale', 'Record sales'],
     ['can_record_stock_supply', 'Record stock supplies'],
+    ['can_modify_fish_size', 'Modify fish sizes'],
     ['can_record_expenses', 'Record expenses'],
     ['can_record_customer_balance_debt_payment', 'Record balance payments'],
     ['can_send_messages_to_customers', 'Send customer messages'],

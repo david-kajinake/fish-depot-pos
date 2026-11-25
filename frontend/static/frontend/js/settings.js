@@ -13,6 +13,7 @@ const permissionKeys = [
     { key: 'can_call_it_a_day', label: 'Call Day' },
     { key: 'can_record_sale', label: 'Sales' },
     { key: 'can_record_stock_supply', label: 'Supply' },
+    { key: 'can_modify_fish_size', label: 'Fish sizes' },
     { key: 'can_record_expenses', label: 'Expenses' },
     { key: 'can_record_customer_balance_debt_payment', label: 'Debts' },
     { key: 'can_send_messages_to_customers', label: 'SMS/WA' },
@@ -266,7 +267,7 @@ function renderPermissionsMatrix() {
     if (!tbody) return;
 
     if (!allUsers.length) {
-        tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No users found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" class="empty-state">No users found.</td></tr>';
         return;
     }
 

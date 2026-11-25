@@ -19,6 +19,7 @@
             <p class="page-subheading">Monitor real-time freezer levels, record new incoming stock, and analyze supply trends.</p>
         </div>
         <div class="inventory-header-actions">
+            <button id="toggleFishSizes" class="btn-secondary" type="button"><i class="fa-solid fa-fish"></i> Fish Sizes</button>
             <button id="open-statement-modal-button" class="btn-secondary">
                 <i class="fa-solid fa-file-pdf"></i> Send Statement
             </button>
@@ -102,6 +103,30 @@
             </table>
         </div>
     </div>
+
+    <section id="fishSizesSection" class="card fish-sizes-card" hidden>
+        <div class="card-header">
+            <div><h3><i class="fa-solid fa-fish"></i> Fish Sizes</h3><p>Create and maintain the fish-size catalogue used by inventory and sales.</p></div>
+            <button id="closeFishSizes" class="btn-cancel" type="button">Close</button>
+        </div>
+        <div class="fish-sizes-layout">
+            <form id="fishSizeForm" class="fish-size-form">
+                <div class="fish-size-form-heading"><h4 id="fishSizeFormTitle">Add fish size</h4><button id="cancelFishSizeEdit" class="link-button" type="button" hidden>Cancel edit</button></div>
+                <input id="fishSizeId" type="hidden">
+                <div class="fish-size-fields">
+                    <div class="form-group"><label for="fishSizeName">Name / size</label><input id="fishSizeName" maxlength="50" required placeholder="e.g. 4"></div>
+                    <div class="form-group"><label for="fishSizeQuantity">Current stock quantity</label><input id="fishSizeQuantity" min="0" type="number" required value="0"></div>
+                    <div class="form-group"><label for="fishSizeWeight">Current stock weight (kg)</label><input id="fishSizeWeight" min="0" step="0.01" type="number" required value="0"></div>
+                    <div class="form-group"><label for="fishSizeBuyingPrice">Buying price / kg</label><input id="fishSizeBuyingPrice" min="0" step="0.01" type="number" required value="0"></div>
+                    <div class="form-group"><label for="fishSizeRetailPrice">Retail price / kg</label><input id="fishSizeRetailPrice" min="0" step="0.01" type="number" required value="0"></div>
+                    <div class="form-group"><label for="fishSizeWholesalePrice">Wholesale price / kg</label><input id="fishSizeWholesalePrice" min="0" step="0.01" type="number" required value="0"></div>
+                    <div class="form-group"><label for="fishSizeFryingFee">Frying fee</label><input id="fishSizeFryingFee" min="0" step="0.01" type="number" required value="0"></div>
+                </div>
+                <button id="saveFishSize" class="btn-primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save fish size</button>
+            </form>
+            <div class="fish-size-list-wrap"><div class="fish-size-list-heading"><h4>Available sizes</h4><span id="fishSizesCount" class="badge-info">0 sizes</span></div><div id="fishSizesList" class="fish-size-list"><p class="text-center">Loading fish sizes…</p></div></div>
+        </div>
+    </section>
 
     <!-- PAST SUPPLIES ACCORDION SECTION -->
     <div class="card past-supplies-card">

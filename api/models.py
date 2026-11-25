@@ -30,6 +30,7 @@ class User(AbstractUser):
     can_call_it_a_day = models.BooleanField(default=False)
     can_record_sale = models.BooleanField(default=True)
     can_record_stock_supply = models.BooleanField(default=False)
+    can_modify_fish_size = models.BooleanField(default=False)
     can_record_expenses = models.BooleanField(default=False)
     can_record_customer_balance_debt_payment = models.BooleanField(default=False)
     can_send_messages_to_customers = models.BooleanField(default=False)
@@ -110,7 +111,7 @@ class SupplyInvoice(models.Model):
 
 class FishSize(models.Model):
     name = models.CharField(max_length=50) # e.g., "4"
-    id = models.CharField(max_length= 5 , blank = True , primary_key= True)
+    id = models.CharField(max_length=50, blank=True, primary_key=True)
     current_stock_kg = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     current_stock_qty = models.IntegerField(default=0)
     buying_price_per_kg = models.DecimalField(max_digits=10, decimal_places=2)
@@ -122,7 +123,10 @@ class FishSize(models.Model):
         return self.name 
     
     def save( self, *args , **kwargs ):
-        self.id = self.name
+        # Keep the primary key stable after creation.  Fish sizes are referenced
+        # by sales and stock records, so renaming a size must not orphan history.
+        if not self.id:
+            self.id = self.name
         super().save(*args , **kwargs)
 
 

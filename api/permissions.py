@@ -23,6 +23,13 @@ class CanRecordStockSupply(BasePermission):
         has_been_granted_permission = request.user and request.user.can_record_stock_supply
         return is_admin_or_superuser or has_been_granted_permission
 
+class CanModifyFishSize(BasePermission):
+    """Allows fish-size writes only for Admin/staff or explicitly authorized users."""
+    def has_permission(self, request, view):
+        user = request.user
+        is_admin_or_staff = bool(user and (user.role == User.ADMIN or user.is_staff or user.is_superuser))
+        return is_admin_or_staff or bool(user and user.can_modify_fish_size)
+
 class CanRecordExpenses(BasePermission):
     def has_permission(self, request, view):
         is_admin_or_superuser = request.user.role == 'ADMIN' or request.user.role == 'MANAGER' or request.user.is_superuser

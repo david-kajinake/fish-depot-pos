@@ -3,6 +3,8 @@ api/__pycache__/
 api/migrations/*
 !api/migrations/0013_spoilage.py
 !api/migrations/0014_systemsetting_automation_targets.py
+!api/migrations/0015_alter_fishsize_id.py
+!api/migrations/0016_user_can_modify_fish_size.py
 api/utils/__pycache__/
 core/__pycache__/
 frontend/__pycache__/

@@ -48,6 +48,18 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('cancel-modal-btn').addEventListener('click', closeSupplyModal);
     document.getElementById('add-supply-row-button').addEventListener('click', addSupplyRow);
 
+    const fishSizesSection = document.getElementById('fishSizesSection');
+    document.getElementById('toggleFishSizes').addEventListener('click', () => {
+        fishSizesSection.hidden = !fishSizesSection.hidden;
+        if (!fishSizesSection.hidden) {
+            renderFishSizesManager();
+            fishSizesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+    document.getElementById('closeFishSizes').addEventListener('click', () => fishSizesSection.hidden = true);
+    document.getElementById('fishSizeForm').addEventListener('submit', saveFishSize);
+    document.getElementById('cancelFishSizeEdit').addEventListener('click', resetFishSizeForm);
+
     const statementModal = document.getElementById('stockStatementModal');
     const statementForm = document.getElementById('stockStatementForm');
     const statementStatus = document.getElementById('stockStatementStatus');
@@ -170,6 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const response = await apiFetch('/api/fish-sizes/');
             fishSizesData = await response.json();
             populateSpoilageSizeDropdown();
+            renderFishSizesManager();
             
             const tbody = document.getElementById('stockTableBody');
             tbody.innerHTML = '';
@@ -225,6 +238,100 @@ document.addEventListener("DOMContentLoaded", () => {
         fishSizesData.forEach((fish) => {
             select.innerHTML += `<option value="${fish.id}">Size ${fish.name}</option>`;
         });
+    }
+
+    function renderFishSizesManager() {
+        const list = document.getElementById('fishSizesList');
+        document.getElementById('fishSizesCount').textContent = `${fishSizesData.length} ${fishSizesData.length === 1 ? 'size' : 'sizes'}`;
+        if (!fishSizesData.length) {
+            list.innerHTML = '<p class="text-center">No fish sizes have been created.</p>';
+            return;
+        }
+        list.innerHTML = fishSizesData.map((fish) => `
+            <article class="fish-size-item">
+                <div><strong>Size ${escapeHtml(fish.name)}</strong><small>${Number(fish.current_stock_qty || 0)} pcs · ${Number(fish.current_stock_kg || 0).toFixed(2)} kg</small></div>
+                <div class="fish-size-item-prices"><span>Buy ${formatMoney(fish.buying_price_per_kg)}/kg</span><span>Retail ${formatMoney(fish.retail_price_per_kg)}/kg</span><span>Wholesale ${formatMoney(fish.wholesale_price_per_kg)}/kg</span><span>Fry ${formatMoney(fish.frying_fee)}</span></div>
+                <div class="fish-size-item-actions"><button class="fish-size-edit" data-id="${escapeHtml(fish.id)}" type="button">Edit</button><button class="fish-size-delete" data-id="${escapeHtml(fish.id)}" type="button">Delete</button></div>
+            </article>`).join('');
+        list.querySelectorAll('.fish-size-edit').forEach((button) => button.addEventListener('click', () => editFishSize(button.dataset.id)));
+        list.querySelectorAll('.fish-size-delete').forEach((button) => button.addEventListener('click', () => deleteFishSize(button.dataset.id)));
+    }
+
+    function editFishSize(id) {
+        const fish = fishSizesData.find((entry) => entry.id === id);
+        if (!fish) return;
+        document.getElementById('fishSizeId').value = fish.id;
+        document.getElementById('fishSizeName').value = fish.name;
+        document.getElementById('fishSizeQuantity').value = fish.current_stock_qty;
+        document.getElementById('fishSizeWeight').value = fish.current_stock_kg;
+        document.getElementById('fishSizeBuyingPrice').value = fish.buying_price_per_kg;
+        document.getElementById('fishSizeRetailPrice').value = fish.retail_price_per_kg;
+        document.getElementById('fishSizeWholesalePrice').value = fish.wholesale_price_per_kg;
+        document.getElementById('fishSizeFryingFee').value = fish.frying_fee;
+        document.getElementById('fishSizeFormTitle').textContent = `Edit size ${fish.name}`;
+        document.getElementById('saveFishSize').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Update fish size';
+        document.getElementById('cancelFishSizeEdit').hidden = false;
+        document.getElementById('fishSizeName').focus();
+    }
+
+    function resetFishSizeForm() {
+        document.getElementById('fishSizeForm').reset();
+        document.getElementById('fishSizeId').value = '';
+        document.getElementById('fishSizeFormTitle').textContent = 'Add fish size';
+        document.getElementById('saveFishSize').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save fish size';
+        document.getElementById('cancelFishSizeEdit').hidden = true;
+    }
+
+    async function saveFishSize(event) {
+        event.preventDefault();
+        const id = document.getElementById('fishSizeId').value;
+        const submitButton = document.getElementById('saveFishSize');
+        const payload = {
+            name: document.getElementById('fishSizeName').value.trim(),
+            current_stock_qty: Number(document.getElementById('fishSizeQuantity').value),
+            current_stock_kg: document.getElementById('fishSizeWeight').value,
+            buying_price_per_kg: document.getElementById('fishSizeBuyingPrice').value,
+            retail_price_per_kg: document.getElementById('fishSizeRetailPrice').value,
+            wholesale_price_per_kg: document.getElementById('fishSizeWholesalePrice').value,
+            frying_fee: document.getElementById('fishSizeFryingFee').value,
+        };
+        submitButton.disabled = true;
+        try {
+            const response = await apiFetch(id ? `/api/fish-sizes/${encodeURIComponent(id)}/` : '/api/fish-sizes/', { method: id ? 'PATCH' : 'POST', body: JSON.stringify(payload) });
+            if (!response.ok) throw await response.json();
+            resetFishSizeForm();
+            await loadLiveStock();
+        } catch (error) {
+            alert(`Could not save fish size: ${formatApiError(error)}`);
+        } finally {
+            submitButton.disabled = false;
+        }
+    }
+
+    async function deleteFishSize(id) {
+        const fish = fishSizesData.find((entry) => entry.id === id);
+        if (!fish || !window.confirm(`Delete fish size ${fish.name}? This cannot be undone.`)) return;
+        try {
+            const response = await apiFetch(`/api/fish-sizes/${encodeURIComponent(id)}/`, { method: 'DELETE' });
+            if (!response.ok) throw await response.json();
+            if (document.getElementById('fishSizeId').value === id) resetFishSizeForm();
+            await loadLiveStock();
+        } catch (error) {
+            alert(`Could not delete fish size: ${formatApiError(error)}`);
+        }
+    }
+
+    function formatMoney(value) {
+        return `KES ${Number(value || 0).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+    }
+
+    function formatApiError(error) {
+        if (error?.detail) return error.detail;
+        return Object.entries(error || {}).map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`).join('; ') || 'Please review the entered values.';
     }
 
     async function loadSpoilages() {

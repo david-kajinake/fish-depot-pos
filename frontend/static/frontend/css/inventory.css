@@ -518,7 +518,33 @@ table tbody tr:hover {
 .spoilage-list li { border-top: 1px solid var(--border-light); display: flex; gap: 1rem; justify-content: space-between; padding: .7rem 1rem; }
 .spoilage-list small { color: var(--text-muted); }
 
+/* Fish-size catalogue management */
+.fish-sizes-card .card-header p { color: var(--text-muted); font-size: .84rem; margin: .3rem 0 0; }
+.fish-sizes-layout { display: grid; gap: 1.25rem; grid-template-columns: minmax(290px, .9fr) minmax(0, 1.4fr); padding: 1.25rem; }
+.fish-size-form { background: #f8fafc; border: 1px solid var(--border-light); border-radius: 10px; padding: 1rem; }
+.fish-size-form-heading, .fish-size-list-heading { align-items: center; display: flex; justify-content: space-between; gap: .75rem; }
+.fish-size-form h4, .fish-size-list-heading h4 { color: var(--text-dark); margin: 0; }
+.fish-size-fields { display: grid; gap: .85rem; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 1rem 0; }
+.fish-size-fields .form-group:first-child { grid-column: 1 / -1; }
+.fish-size-fields input { background: #fff; border: 1px solid var(--border-light); border-radius: 7px; box-sizing: border-box; padding: .65rem; width: 100%; }
+.fish-size-fields label { color: var(--text-muted); display: block; font-size: .77rem; font-weight: 700; margin-bottom: .3rem; }
+.link-button { background: none; border: 0; color: var(--ocean-blue); cursor: pointer; font-weight: 700; padding: 0; }
+.fish-size-list-wrap { min-width: 0; }
+.fish-size-list { display: grid; gap: .7rem; margin-top: 1rem; max-height: 460px; overflow-y: auto; padding-right: .25rem; }
+.fish-size-item { align-items: center; border: 1px solid var(--border-light); border-radius: 9px; display: grid; gap: .85rem; grid-template-columns: minmax(100px, .9fr) minmax(230px, 1.4fr) auto; padding: .85rem; }
+.fish-size-item strong { color: var(--ocean-blue); display: block; }
+.fish-size-item small { color: var(--text-muted); display: block; margin-top: .25rem; }
+.fish-size-item-prices { display: flex; flex-wrap: wrap; gap: .35rem .7rem; }
+.fish-size-item-prices span { color: var(--text-muted); font-size: .75rem; }
+.fish-size-item-actions { display: flex; gap: .45rem; }
+.fish-size-item-actions button { border-radius: 6px; cursor: pointer; font-size: .75rem; font-weight: 700; padding: .45rem .65rem; }
+.fish-size-edit { background: #eaf5ff; border: 1px solid #b9dfff; color: var(--ocean-blue); }
+.fish-size-delete { background: #fff0f0; border: 1px solid #ffcaca; color: #be3030; }
+
 @media (max-width: 700px) {
     .spoilage-card .card-header { align-items: flex-start; flex-direction: column; }
     .spoilage-form { grid-template-columns: 1fr; }
+    .fish-sizes-layout { grid-template-columns: 1fr; padding: 1rem; }
+    .fish-size-fields { grid-template-columns: 1fr; }
+    .fish-size-item { align-items: start; grid-template-columns: 1fr; }
 }
