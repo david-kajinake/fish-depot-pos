@@ -67,6 +67,8 @@
     <script type="module" src="{% static 'frontend/js/base.js' %}?v={{latest}}"></script>
     <!-- Authentication Logic -->
     <script type="module" src="{% static 'frontend/js/session.js' %}?v={{latest}}"></script>
+    <!-- Shared language translation logic -->
+    <script type="module" src="{% static 'frontend/js/i18n.js' %}?v={{latest}}"></script>
     
     {% block extra_js %}{% endblock %}
 </body>

@@ -1,4 +1,5 @@
 import { apiFetch, getCurrentUser, logout } from './session.js';
+import { applyLanguage } from './i18n.js';
 
 let systemSettingsState = {
     statement_contacts: [],
@@ -576,6 +577,7 @@ async function saveUserSettings(e) {
         if (!res.ok) throw await res.json();
         
         window.dispatchEvent(new CustomEvent('userSettingsUpdated', { detail: data }));
+        applyLanguage(data.language);
         alert('Display settings updated.');
     } catch (err) {
         alert('Error saving display settings.');
